@@ -26,31 +26,35 @@ mainWindow.fig = figure('name', 'Interactive Matrix Profile Calculation', ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
 
 %% add UI element into the window
-figPosition = get(mainWindow.fig, 'position');
 backColor = get(mainWindow.fig, 'color');
-axesHeight = round((figPosition(4)-140)/3);
-mainWindow.dataAx = axes('parent',mainWindow.fig, 'units', 'pixels', ...
-    'position', [30, 2*axesHeight+110, figPosition(3)-60, axesHeight]);
-mainWindow.profileAx = axes('parent',mainWindow.fig, 'units', 'pixels', ...
-    'position', [30, axesHeight+70, figPosition(3)-60, axesHeight]);
-mainWindow.motifAx = axes('parent',mainWindow.fig, 'units', 'pixels', ...
-    'position', [30, 30, figPosition(3)-160, axesHeight]);
-mainWindow.discardBtn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Discard', 'fontsize', 10, 'position', [figPosition(3)-120, 65, 90, 25], ...
-    'callback', @pushDiscardBtn);
+mainWindow.dataAx = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.profileAx = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.motif1Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.motif2Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.motif3Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.discordAx = axes('parent',mainWindow.fig, 'units', 'pixels');
+mainWindow.discard1Btn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
+    'string', 'Discard', 'fontsize', 10, 'callback', @pushDiscardBtn);
 mainWindow.stopBtn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Stop', 'fontsize', 10, 'position', [figPosition(3)-120, 30, 90, 25], ...
-    'callback', @pushStopBtn);
+    'string', 'Stop', 'fontsize', 10, 'callback', @pushStopBtn);
 mainWindow.dataText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
     'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left', 'position', [30, 3*axesHeight+110, figPosition(3)-60, 18]);
-mainWindow.motifText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left', 'position', [30, axesHeight+30, figPosition(3)-160, 18]);
+    'horizontalalignment', 'left');
 mainWindow.profileText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
     'string', 'The best-so-far matrix profile', 'fontsize', 10, ...
-    'backgroundcolor', backColor,'horizontalalignment', 'left', ...
-    'position', [30, 2*axesHeight+70, figPosition(3)-60, 18]);
+    'backgroundcolor', backColor,'horizontalalignment', 'left');
+mainWindow.motif1Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
+    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
+    'horizontalalignment', 'left');
+mainWindow.motif2Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
+    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
+    'horizontalalignment', 'left');
+mainWindow.motif3Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
+    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
+    'horizontalalignment', 'left');
+mainWindow.discordText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
+    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
+    'horizontalalignment', 'left');
 
 %% modify the properties of the axis
 set(mainWindow.dataAx,'xlim',[1, dataLen]);
@@ -59,10 +63,22 @@ set(mainWindow.dataAx,'ytick',[]);
 set(mainWindow.dataAx,'ycolor',[1 1 1]);
 set(mainWindow.profileAx,'xlim',[1, dataLen]);
 set(mainWindow.profileAx,'ylim',[0, 2*sqrt(subLen)]);
-set(mainWindow.motifAx,'xlim',[1, subLen]);
-set(mainWindow.motifAx,'ylim',[-0.05, 1.05]);
-set(mainWindow.motifAx,'ytick',[]);
-set(mainWindow.motifAx,'ycolor',[1 1 1]);
+set(mainWindow.motif1Ax,'xlim',[1, subLen]);
+set(mainWindow.motif1Ax,'ylim',[-0.05, 1.05]);
+set(mainWindow.motif1Ax,'ytick',[]);
+set(mainWindow.motif1Ax,'ycolor',[1 1 1]);
+set(mainWindow.motif2Ax,'xlim',[1, subLen]);
+set(mainWindow.motif2Ax,'ylim',[-0.05, 1.05]);
+set(mainWindow.motif2Ax,'ytick',[]);
+set(mainWindow.motif2Ax,'ycolor',[1 1 1]);
+set(mainWindow.motif3Ax,'xlim',[1, subLen]);
+set(mainWindow.motif3Ax,'ylim',[-0.05, 1.05]);
+set(mainWindow.motif3Ax,'ytick',[]);
+set(mainWindow.motif3Ax,'ycolor',[1 1 1]);
+set(mainWindow.discordAx,'xlim',[1, subLen]);
+set(mainWindow.discordAx,'ylim',[-0.05, 1.05]);
+set(mainWindow.discordAx,'ytick',[]);
+set(mainWindow.discordAx,'ycolor',[1 1 1]);
 
 %% plot data
 dataPlot = zeroOneNorm(data);
@@ -149,15 +165,15 @@ for i = 1:profileLen
             motifDataPlot(j) = plot(motifPos, dataPlot(motifPos), ...
                 motifColor{j}, 'parent', mainWindow.dataAx);
             hold(mainWindow.dataAx, 'off');
-            hold(mainWindow.motifAx, 'on');
+            hold(mainWindow.motif1Ax, 'on');
             motifMotifPlot(j) = plot(1:subLen, zeroOneNorm(dataPlot(motifPos)),...
-                motifColor{j}, 'parent', mainWindow.motifAx);
-            hold(mainWindow.motifAx, 'off');
+                motifColor{j}, 'parent', mainWindow.motif1Ax);
+            hold(mainWindow.motif1Ax, 'off');
         end
         set(mainWindow.dataText, 'string', ...
             sprintf('We are %.1f%% done: The input time series: The best-so-far motifs are color coded (see bottom panel)', i*100/profileLen));
-        set(mainWindow.motifText, 'string', ...
-            sprintf('The best-so-far motifs are located at %d (green) and %d (cyan)', motifIdx(1), motifIdx(2)));
+        set(mainWindow.motif1Text, 'string', ...
+            sprintf('The best-so-far 1st motifs are located at %d (green) and %d (cyan)', motifIdx(1), motifIdx(2)));
         
         % show the figure
         if firstUpdate
@@ -176,7 +192,7 @@ for i = 1:profileLen
         end
         if i == profileLen
             set(mainWindow.fig, 'name', 'Interactive Matrix Profile Calculation (Completed)');
-            set(mainWindow.discardBtn, 'enable', 'off');
+            set(mainWindow.discard1Btn, 'enable', 'off');
             set(mainWindow.stopBtn, 'enable', 'off');
             return;
         end
@@ -197,7 +213,7 @@ function pushStopBtn(src, ~)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
 mainWindow.stopping = true;
-set(mainWindow.discardBtn, 'enable', 'off');
+set(mainWindow.discard1Btn, 'enable', 'off');
 set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
 
@@ -234,12 +250,19 @@ x = x/max(x);
 function mainResize(src, ~)
 mainWindow = get(src, 'userdata');
 figPosition = get(mainWindow.fig, 'position');
-axesHeight = round((figPosition(4)-140)/3);
-set(mainWindow.dataAx, 'position', [30, 2*axesHeight+110, figPosition(3)-60, axesHeight]);
-set(mainWindow.profileAx, 'position', [30, axesHeight+70, figPosition(3)-60, axesHeight]);
-set(mainWindow.motifAx, 'position', [30, 30, figPosition(3)-160, axesHeight]);
-set(mainWindow.discardBtn, 'position', [figPosition(3)-120, 65, 90, 25]);
-set(mainWindow.stopBtn, 'position', [figPosition(3)-120, 30, 90, 25]);
-set(mainWindow.dataText, 'position', [30, 3*axesHeight+110, figPosition(3)-60, 18]);
-set(mainWindow.profileText, 'position', [30, 2*axesHeight+70, figPosition(3)-60, 18]);
-set(mainWindow.motifText, 'position', [30, axesHeight+30, figPosition(3)-160, 18]);
+axGap = 36;
+axesHeight = round((figPosition(4)-axGap*5-60)/6);
+set(mainWindow.dataAx, 'position', [30, 5*axesHeight+5*axGap+30, figPosition(3)-60, axesHeight]);
+set(mainWindow.profileAx, 'position', [30, 4*axesHeight+4*axGap+30, figPosition(3)-60, axesHeight]);
+set(mainWindow.motif1Ax, 'position', [30, 3*axesHeight+3*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.motif2Ax, 'position', [30, 2*axesHeight+2*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.motif3Ax, 'position', [30, 1*axesHeight+1*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.discordAx, 'position', [30, 30, figPosition(3)-160, axesHeight]);
+set(mainWindow.discard1Btn, 'position', [figPosition(3)-120, 3*axesHeight+3*axGap+30, 90, 20]);
+set(mainWindow.stopBtn, 'position', [figPosition(3)-120, 30, 90, 20]);
+set(mainWindow.dataText, 'position', [30, 6*axesHeight+5*axGap+30, figPosition(3)-60, 18]);
+set(mainWindow.profileText, 'position', [30, 5*axesHeight+4*axGap+30, figPosition(3)-60, 18]);
+set(mainWindow.motif1Text, 'position', [30, 4*axesHeight+3*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.motif2Text, 'position', [30, 3*axesHeight+2*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.motif3Text, 'position', [30, 2*axesHeight+1*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.discordText, 'position', [30, 1*axesHeight+30, figPosition(3)-160, 18]);
