@@ -5,4 +5,4 @@ clc;
 load('testData.mat');
 
 
-[matrixProfile, profileIndex, motifIndex] = interactiveMatrixProfile(data, subLen);
+[matrixProfile, profileIndex, motifIndex, discordIndex] = interactiveMatrixProfile(data, subLen);
