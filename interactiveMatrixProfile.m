@@ -2,6 +2,25 @@
 % Chin-Chia Michael Yeh 01/26/2016
 %
 % [matrixProfile, profileIndex, motifIndex, discordIndex] = interactiveMatrixProfile(data, subsequenceLength);
+% Output:
+%     matrixProfile: matrix porfile of the self-join (vector)
+%     profileIndex: matrix porfile index of the self-join (vector)
+%     motifIndex: index of the first, second, and third motifs and their associated nearest neighbors when stopped (3x2 cell)
+%                +--------------------------------+-------------------------------------------+
+%                | pair of index for first motif  | nearest neighbor of the first motif pair  |
+%                +--------------------------------+-------------------------------------------+
+%                | pair of index for second motif | nearest neighbor of the second motif pair |
+%                +--------------------------------+-------------------------------------------+
+%                | pair of index for third motif  | nearest neighbor of the third motif pair  |
+%                +--------------------------------+-------------------------------------------+
+%     discordIndex: index of discords when stopped (vector)
+% Input:
+%     data: input time series (vector)
+%     SubsequenceLength: interested subsequence length (scalar)
+%
+% Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego
+% Furtado Silva, Abdullah Mueen, Eamonn Keogh. All Pairs Similarity Joins for Time Series Subsequences.
+% SIGKDD 2016
 %
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
@@ -379,6 +398,8 @@ set(mainWindow.discard3Btn, 'enable', 'off');
 set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
 
+%% The following two functions are modified from the code provided in the following URL
+%  http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
 function [dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
     fastfindNNPre(data, dataLen, subLen)
 data(dataLen+1:2*dataLen) = 0;
