@@ -46,7 +46,7 @@ if dataLen == size(data, 2)
 end
 
 %% spawn main window
-mainWindow.fig = figure('name', 'Interactive Matrix Profile Calculation', ...
+mainWindow.fig = figure('name', 'UCR Interactive Matrix Profile Calculation', ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
 
 %% add UI element into the window
@@ -378,11 +378,11 @@ for i = 1:profileLen
         mainWindow.motifIdxs = motifIdxs;
         set(mainWindow.fig, 'userdata', mainWindow);
         if mainWindow.stopping
-            set(mainWindow.fig, 'name', 'Interactive Matrix Profile Calculation (Stopped)');
+            set(mainWindow.fig, 'name', 'UCR Interactive Matrix Profile Calculation (Stopped)');
             return;
         end
         if i == profileLen
-            set(mainWindow.fig, 'name', 'Interactive Matrix Profile Calculation (Completed)');
+            set(mainWindow.fig, 'name', 'UCR Interactive Matrix Profile Calculation (Completed)');
             set(mainWindow.discard1Btn, 'enable', 'off');
             set(mainWindow.discard2Btn, 'enable', 'off');
             set(mainWindow.discard3Btn, 'enable', 'off');
