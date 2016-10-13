@@ -18,9 +18,9 @@
 %     data: input time series (vector)
 %     SubsequenceLength: interested subsequence length (scalar)
 %
-% Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego
-% Furtado Silva, Abdullah Mueen, Eamonn Keogh. All Pairs Similarity Joins for Time Series Subsequences.
-% SIGKDD 2016
+% Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau, 
+% Diego Furtado Silva, Abdullah Mueen, and Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
+% Joins for Time Series," ICDM 2016, http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
 %
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
@@ -114,10 +114,19 @@ hold(mainWindow.dataAx, 'on');
 plot(1:dataLen, dataPlot, 'r', 'parent', mainWindow.dataAx);
 hold(mainWindow.dataAx, 'off');
 
+%% locate nan and inf
+profileLen = dataLen - subLen + 1;
+isSkip = false(profileLen, 1);
+for i = 1:profileLen
+    if any(isnan(data(i:i+subLen-1))) || any(isinf(data(i:i+subLen-1)))
+        isSkip(i) = true;
+    end
+end
+data(isnan(data)|isinf(data)) = 0;
+    
 %% preprocess for matrix profile
 [dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
     fastfindNNPre(data, dataLen, subLen);
-profileLen = dataLen - subLen + 1;
 idxOrder = randperm(profileLen);
 matrixProfile = inf(profileLen, 1);
 profileIndex = zeros(profileLen, 1);
@@ -131,10 +140,23 @@ timer = tic();
 for i = 1:profileLen
     % compute the distance profile
     idx = idxOrder(i);
+    if isSkip(idx)
+       continue 
+    end
     query = data(idx:idx+subLen-1);
-    distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
-        data2Sum, dataSum, dataMean, data2Sig, dataSig);
-    distanceProfile = abs(distanceProfile);
+    if i == 1
+        distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
+            data2Sum, dataSum, dataMean, data2Sig, dataSig);
+        distanceProfile = abs(distanceProfile);
+    else
+        % replace with yan's method
+        distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
+            data2Sum, dataSum, dataMean, data2Sig, dataSig);
+        distanceProfile = abs(distanceProfile);
+    end
+    
+    % apply skip zone
+    distanceProfile(isSkip) = inf;
     
     % apply exclusion zone
     exclusionZoneStart = max(1, idx-exclusionZone);
@@ -214,6 +236,7 @@ for i = 1:profileLen
             motifZoneStart = max(1, motifIdx-exclusionZone);
             motifZoneEnd = min(profileLen, motifIdx+exclusionZone);
             motifDistanceProfile(motifZoneStart:motifZoneEnd) = inf;
+            motifDistanceProfile(isSkip) = inf;
             [distanceOrder, distanceIdxOrder] = sort(motifDistanceProfile, 'ascend');
             motifNeighbor = zeros(1, 10);
             for k = 1:10
@@ -371,7 +394,7 @@ for i = 1:profileLen
         set(mainWindow.discard1Btn, 'enable', 'on');
         set(mainWindow.discard2Btn, 'enable', 'on');
         set(mainWindow.discard3Btn, 'enable', 'on');
-        pause(eps);
+        pause(0.01);
         timer = tic();
     end
 end
@@ -427,8 +450,8 @@ distanceProfile = (data2Sum - 2*dataSum.*dataMean + subLen*(dataMean.^2))./data2
 distanceProfile = sqrt(distanceProfile);
 
 function x = zeroOneNorm(x)
-x = x-min(x);
-x = x/max(x);
+x = x-min(x(~isinf(x) & ~isnan(x)));
+x = x/max(x(~isinf(x) & ~isnan(x)));
 
 function mainResize(src, ~)
 mainWindow = get(src, 'userdata');
