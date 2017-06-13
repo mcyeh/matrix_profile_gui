@@ -214,56 +214,14 @@ for i = 1:proLen
     end
     
     % find matif
-    motifIdxs = cell(3, 2);
-    for j = 1:3
-        [motifDistance, minIdx] = min(matrixProfileCur);
-        motifDistance = motifDistance ^ 2;
-        motifIdxs{j, 1} = sort([minIdx, profileIndex(minIdx)]);
-        motifIdx = motifIdxs{j, 1}(1);
-        motifQuery = data(motifIdx:motifIdx+subLen-1);
-        
-        % find neighbors
-        motifDistProfile = mass(dataFreq, motifQuery, ...
-            dataLen, subLen, dataMu, dataSig, ...
-            dataMu(motifIdx), dataSig(motifIdx));
-        motifDistProfile = abs(motifDistProfile);
-        motifDistProfile(motifDistProfile > motifDistance*radius) = inf;
-        motifZoneStart = max(1, motifIdx-excZoneLen);
-        motifZoneEnd = min(proLen, motifIdx+excZoneLen);
-        motifDistProfile(motifZoneStart:motifZoneEnd) = inf;
-        motifIdx = motifIdxs{j, 1}(2);
-        motifZoneStart = max(1, motifIdx-excZoneLen);
-        motifZoneEnd = min(proLen, motifIdx+excZoneLen);
-        motifDistProfile(motifZoneStart:motifZoneEnd) = inf;
-        motifDistProfile(isSkip) = inf;
-        [distanceOrder, distanceIdxOrder] = sort(motifDistProfile, 'ascend');
-        motifNeighbor = zeros(1, 10);
-        for k = 1:10
-            if isinf(distanceOrder(1)) || length(distanceOrder) < k
-                break;
-            end
-            motifNeighbor(k) = distanceIdxOrder(1);
-            distanceOrder(1) = [];
-            distanceIdxOrder(1) = [];
-            distanceOrder(abs(distanceIdxOrder - motifNeighbor(k)) < excZoneLen) = [];
-            distanceIdxOrder(abs(distanceIdxOrder - motifNeighbor(k)) < excZoneLen) = [];
-        end
-        motifNeighbor(motifNeighbor == 0) = [];
-        motifIdxs{j, 2} = motifNeighbor;
-        
-        % remove found motif and their neighbor
-        removeIdx = cell2mat(motifIdxs(j, :));
-        for k = 1:length(removeIdx)
-            removeZoneStart = max(1, removeIdx(k)-excZoneLen);
-            removeZoneEnd = min(proLen, removeIdx(k)+excZoneLen);
-            matrixProfileCur(removeZoneStart:removeZoneEnd) = inf;
-        end
-    end
+    [motifIdxs, matrixProfileCur] = findMotifs(...
+        matrixProfileCur, profileIndex, dataLen, subLen, proLen, ...
+        data, dataFreq, dataMu, dataSig, isSkip, excZoneLen, radius);
     
     % plot motif on data
     motifMarkPlot = zeros(2, 1);
     for j = 1:2
-        motifPos = motifIdxs{1, 1}(j):motifIdxs{1, 1}(j)+subLen-1;
+        motifPos = motifIdxs{1, 1}(j):motifIdxs{1, 1}(j) + subLen - 1;
         hold(mainWindow.dataAx, 'on');
         motifMarkPlot(j) = plot(motifPos, dataPlot(motifPos), ...
             motifColor{j}, 'parent', mainWindow.dataAx);
@@ -275,8 +233,8 @@ for i = 1:proLen
     for j = 1:3
         motifPlot{j, 2} = zeros(length(motifIdxs{j, 2}), 1);
         for k = 1:length(motifIdxs{j, 2})
-            neighborPos = motifIdxs{j, 2}(k):motifIdxs{j, 2}(k)+subLen-1;
-            
+            neighborPos = ...
+                motifIdxs{j, 2}(k):motifIdxs{j, 2}(k) + subLen - 1;
             hold(mainWindow.motifAx(j), 'on');
             motifPlot{j, 2}(k) = plot(1:subLen, ...
                 zeroOneNorm(dataPlot(neighborPos)),...
@@ -290,8 +248,8 @@ for i = 1:proLen
     for j = 1:3
         motifPlot{j, 1} = zeros(2, 1);
         for k = 1:2
-            motifPos = motifIdxs{j, 1}(k):motifIdxs{j, 1}(k)+subLen-1;
-            
+            motifPos = ...
+                motifIdxs{j, 1}(k):motifIdxs{j, 1}(k) + subLen - 1;
             hold(mainWindow.motifAx(j), 'on');
             set(mainWindow.motifText(j), 'string', ...
                 sprintf(txtTemp{j}, ...
@@ -324,7 +282,7 @@ for i = 1:proLen
         if isnan(discordIdx(j))
             break;
         end
-        discordPos = discordIdx(j):discordIdx(j)+subLen-1;
+        discordPos = discordIdx(j):discordIdx(j) + subLen - 1;
         hold(mainWindow.discordAx, 'on');
         discordPlot(j) = plot(1:subLen, ...
             zeroOneNorm(dataPlot(discordPos)),...
@@ -375,6 +333,55 @@ for i = 1:proLen
     timer = tic();
 end
 
+
+function [motifIdxs, matrixProfileCur] = findMotifs(...
+    matrixProfileCur, profileIndex, dataLen, subLen, proLen, ...
+    data, dataFreq, dataMu, dataSig, isSkip, excZoneLen, radius)
+motifIdxs = cell(3, 2);
+for j = 1:3
+    [motifDistance, minIdx] = min(matrixProfileCur);
+    motifDistance = motifDistance ^ 2;
+    motifIdxs{j, 1} = sort([minIdx, profileIndex(minIdx)]);
+    motifIdx = motifIdxs{j, 1}(1);
+    query = data(motifIdx:motifIdx + subLen - 1);
+    
+    distProfile = mass(dataFreq, query, ...
+        dataLen, subLen, dataMu, dataSig, ...
+        dataMu(motifIdx), dataSig(motifIdx));
+    distProfile = abs(distProfile);
+    distProfile(distProfile > motifDistance * radius) = inf;
+    motifZoneStart = max(1, motifIdx - excZoneLen);
+    motifZoneEnd = min(proLen, motifIdx + excZoneLen);
+    distProfile(motifZoneStart:motifZoneEnd) = inf;
+    motifIdx = motifIdxs{j, 1}(2);
+    motifZoneStart = max(1, motifIdx - excZoneLen);
+    motifZoneEnd = min(proLen, motifIdx + excZoneLen);
+    distProfile(motifZoneStart:motifZoneEnd) = inf;
+    distProfile(isSkip) = inf;
+    [distanceOrder, distanceIdxOrder] = sort(distProfile, 'ascend');
+    motifNeighbor = zeros(1, 10);
+    for k = 1:10
+        if isinf(distanceOrder(1)) || length(distanceOrder) < k
+            break;
+        end
+        motifNeighbor(k) = distanceIdxOrder(1);
+        distanceOrder(1) = [];
+        distanceIdxOrder(1) = [];
+        distanceOrder(abs(distanceIdxOrder - motifNeighbor(k)) < ...
+            excZoneLen) = [];
+        distanceIdxOrder(abs(distanceIdxOrder - motifNeighbor(k)) < ...
+            excZoneLen) = [];
+    end
+    motifNeighbor(motifNeighbor == 0) = [];
+    motifIdxs{j, 2} = motifNeighbor;
+
+    removeIdx = cell2mat(motifIdxs(j, :));
+    for k = 1:length(removeIdx)
+        removeZoneStart = max(1, removeIdx(k) - excZoneLen);
+        removeZoneEnd = min(proLen, removeIdx(k) + excZoneLen);
+        matrixProfileCur(removeZoneStart:removeZoneEnd) = inf;
+    end
+end
 
 function pushDiscardBtn(src, ~, btnNum)
 mainWindowFig = get(src, 'parent');
