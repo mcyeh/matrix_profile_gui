@@ -34,6 +34,7 @@ excZoneLen = round(subLen * 0.5);
 radius = 2;
 updatePeriod = 1;
 anytimeMode = 2;
+titleTxt = 'UCR Interactive Matrix Profile Calculation 2.0';
 
 %% check input
 dataLen = length(data);
@@ -52,11 +53,8 @@ if dataLen == size(data, 2)
 end
 
 %% spawn main window
-mainWindow.fig = figure('name', ...
-    'UCR Interactive Matrix Profile Calculation', ...
+mainWindow.fig = figure('name', titleTxt, ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
-
-%% add UI element into the window
 backColor = get(mainWindow.fig, 'color');
 mainWindow.dataAx = axes('parent', mainWindow.fig, ...
     'units', 'pixels', 'xlim', [1, dataLen], 'xtick', [1, dataLen], ...
@@ -334,11 +332,9 @@ for i = 1:length(idxOrder)
     mainWindow.motifIdxs = motifIdxs;
     set(mainWindow.fig, 'userdata', mainWindow);
     if i == proLen
-        set(mainWindow.fig, 'name', ...
-            'UCR Interactive Matrix Profile Calculation (Completed)');
+        set(mainWindow.fig, 'name', [titleTxt, ' (Completed)']);
     elseif mainWindow.stopping
-        set(mainWindow.fig, 'name', ...
-            'UCR Interactive Matrix Profile Calculation (Stopped)');
+        set(mainWindow.fig, 'name', [titleTxt, ' (Stopped)']);
     end
     if i == length(idxOrder) || mainWindow.stopping
         for j = 1:3
