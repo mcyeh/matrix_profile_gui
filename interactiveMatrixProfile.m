@@ -1,7 +1,8 @@
 % The prototype for interactive matrix profile calculation
 % Chin-Chia Michael Yeh 01/26/2016
 %
-% [matrixProfile, profileIndex, motifIndex, discordIndex] = interactiveMatrixProfile(data, subsequenceLength);
+% [matrixProfile, profileIndex, motifIndex, discordIndex] = ...
+%     interactiveMatrixProfile(data, subLen);
 % Output:
 %     matrixProfile: matrix porfile of the self-join (vector)
 %     profileIndex: matrix porfile index of the self-join (vector)
@@ -16,7 +17,7 @@
 %     discordIndex: index of discords when stopped (vector)
 % Input:
 %     data: input time series (vector)
-%     SubsequenceLength: interested subsequence length (scalar)
+%     subLen: interested subsequence length (scalar)
 %
 % Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau, 
 % Diego Furtado Silva, Abdullah Mueen, and Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
@@ -25,93 +26,101 @@
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
     interactiveMatrixProfile(data, subLen)
-%% set trivial match exclusion zone
-exclusionZone = round(subLen/2);
+%% set trivial match exclusion zone and motif radius
+exclusionZone = round(subLen * 0.5);
 radius = 2;
 
 %% check input
 dataLen = length(data);
-if subLen > dataLen/2
-    error('Error: Time series is too short relative to desired subsequence length');
+if subLen > dataLen / 2
+    error(['Error: Time series is too short ', ...
+        'relative to desired subsequence length']);
 end
 if subLen < 4
     error('Error: Subsequence length must be at least 4');
 end
 if subLen > dataLen / 20
-    error('Error: subsequenceLength > dataLength/20')
+    error('Error: subsequenceLength > dataLength / 20')
 end
 if dataLen == size(data, 2)
     data = data';
 end
 
 %% spawn main window
-mainWindow.fig = figure('name', 'UCR Interactive Matrix Profile Calculation', ...
+mainWindow.fig = figure('name', ...
+    'UCR Interactive Matrix Profile Calculation', ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
 
 %% add UI element into the window
 backColor = get(mainWindow.fig, 'color');
-mainWindow.dataAx = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.profileAx = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.motif1Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.motif2Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.motif3Ax = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.discordAx = axes('parent',mainWindow.fig, 'units', 'pixels');
-mainWindow.discard1Btn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Discard', 'fontsize', 10, 'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 1));
-mainWindow.discard2Btn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Discard', 'fontsize', 10, 'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 2));
-mainWindow.discard3Btn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Discard', 'fontsize', 10, 'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 3));
-mainWindow.stopBtn = uicontrol('parent',mainWindow.fig, 'style', 'pushbutton',...
-    'string', 'Stop', 'fontsize', 10, 'callback', @pushStopBtn);
-mainWindow.dataText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
+mainWindow.dataAx = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.profileAx = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.motif1Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.motif2Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.motif3Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.discordAx = axes('parent', mainWindow.fig, 'units', 'pixels');
+mainWindow.discardBtn = zeros(3, 1);
+mainWindow.discard1Btn = uicontrol('parent',mainWindow.fig, ...
+    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
+    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 1));
+mainWindow.discard2Btn = uicontrol('parent', mainWindow.fig, ...
+    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
+    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 2));
+mainWindow.discard3Btn = uicontrol('parent', mainWindow.fig, ...
+    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
+    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 3));
+mainWindow.stopBtn = uicontrol('parent', mainWindow.fig, ...
+    'style', 'pushbutton', 'string', 'Stop', 'fontsize', 10, ...
+    'callback', @pushStopBtn);
+mainWindow.dataText = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', '', 'fontsize', 10, ...
+    'backgroundcolor', backColor, 'horizontalalignment', 'left');
+mainWindow.profileText = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', 'The best-so-far matrix profile', ...
+    'fontsize', 10, 'backgroundcolor', backColor, ...
     'horizontalalignment', 'left');
-mainWindow.profileText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', 'The best-so-far matrix profile', 'fontsize', 10, ...
-    'backgroundcolor', backColor,'horizontalalignment', 'left');
-mainWindow.motif1Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left');
-mainWindow.motif2Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left');
-mainWindow.motif3Text = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left');
-mainWindow.discordText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
-    'string', '', 'fontsize', 10, 'backgroundcolor', backColor, ...
-    'horizontalalignment', 'left');
+mainWindow.motif1Text = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', '', 'fontsize', 10, ...
+    'backgroundcolor', backColor, 'horizontalalignment', 'left');
+mainWindow.motif2Text = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', '', 'fontsize', 10, ...
+    'backgroundcolor', backColor, 'horizontalalignment', 'left');
+mainWindow.motif3Text = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', '', 'fontsize', 10, ...
+    'backgroundcolor', backColor, 'horizontalalignment', 'left');
+mainWindow.discordText = uicontrol('parent', mainWindow.fig, ...
+    'style', 'text', 'string', '', 'fontsize', 10, ...
+    'backgroundcolor', backColor, 'horizontalalignment', 'left');
 
 %% modify the properties of the axis
-set(mainWindow.dataAx,'xlim',[1, dataLen]);
-set(mainWindow.dataAx,'xtick',[1, dataLen]);
-set(mainWindow.dataAx,'ylim',[-0.05, 1.05]);
-set(mainWindow.dataAx,'ytick',[]);
-set(mainWindow.dataAx,'ycolor',[1 1 1]);
-set(mainWindow.profileAx,'xlim',[1, dataLen]);
-set(mainWindow.profileAx,'xtick',[1, dataLen]);
-set(mainWindow.profileAx,'ylim',[0, 2*sqrt(subLen)]);
-set(mainWindow.motif1Ax,'xlim',[1, subLen]);
-set(mainWindow.motif1Ax,'xtick',[1, subLen]);
-set(mainWindow.motif1Ax,'ylim',[-0.05, 1.05]);
-set(mainWindow.motif1Ax,'ytick',[]);
-set(mainWindow.motif1Ax,'ycolor',[1 1 1]);
-set(mainWindow.motif2Ax,'xlim',[1, subLen]);
-set(mainWindow.motif2Ax,'xtick',[1, subLen]);
-set(mainWindow.motif2Ax,'ylim',[-0.05, 1.05]);
-set(mainWindow.motif2Ax,'ytick',[]);
-set(mainWindow.motif2Ax,'ycolor',[1 1 1]);
-set(mainWindow.motif3Ax,'xlim',[1, subLen]);
-set(mainWindow.motif3Ax,'xtick',[1, subLen]);
-set(mainWindow.motif3Ax,'ylim',[-0.05, 1.05]);
-set(mainWindow.motif3Ax,'ytick',[]);
-set(mainWindow.motif3Ax,'ycolor',[1 1 1]);
-set(mainWindow.discordAx,'xlim',[1, subLen]);
-set(mainWindow.discordAx,'xtick',[1, subLen]);
-set(mainWindow.discordAx,'ylim',[-0.05, 1.05]);
-set(mainWindow.discordAx,'ytick',[]);
-set(mainWindow.discordAx,'ycolor',[1 1 1]);
+set(mainWindow.dataAx,'xlim', [1, dataLen]);
+set(mainWindow.dataAx,'xtick', [1, dataLen]);
+set(mainWindow.dataAx,'ylim', [-0.05, 1.05]);
+set(mainWindow.dataAx,'ytick', []);
+set(mainWindow.dataAx,'ycolor', [1 1 1]);
+set(mainWindow.profileAx,'xlim', [1, dataLen]);
+set(mainWindow.profileAx,'xtick', [1, dataLen]);
+set(mainWindow.profileAx,'ylim', [0, 2*sqrt(subLen)]);
+set(mainWindow.motif1Ax,'xlim', [1, subLen]);
+set(mainWindow.motif1Ax,'xtick', [1, subLen]);
+set(mainWindow.motif1Ax,'ylim', [-0.05, 1.05]);
+set(mainWindow.motif1Ax,'ytick', []);
+set(mainWindow.motif1Ax,'ycolor', [1 1 1]);
+set(mainWindow.motif2Ax,'xlim', [1, subLen]);
+set(mainWindow.motif2Ax,'xtick', [1, subLen]);
+set(mainWindow.motif2Ax,'ylim', [-0.05, 1.05]);
+set(mainWindow.motif2Ax,'ytick', []);
+set(mainWindow.motif2Ax,'ycolor', [1 1 1]);
+set(mainWindow.motif3Ax,'xlim', [1, subLen]);
+set(mainWindow.motif3Ax,'xtick', [1, subLen]);
+set(mainWindow.motif3Ax,'ylim', [-0.05, 1.05]);
+set(mainWindow.motif3Ax,'ytick', []);
+set(mainWindow.motif3Ax,'ycolor', [1 1 1]);
+set(mainWindow.discordAx,'xlim', [1, subLen]);
+set(mainWindow.discordAx,'xtick', [1, subLen]);
+set(mainWindow.discordAx,'ylim', [-0.05, 1.05]);
+set(mainWindow.discordAx,'ytick', []);
+set(mainWindow.discordAx,'ycolor', [1 1 1]);
 
 %% plot data
 dataPlot = zeroOneNorm(data);
@@ -131,7 +140,7 @@ data(isnan(data)|isinf(data)) = 0;
     
 %% preprocess for matrix profile
 [dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
-    fastfindNNPre(data, dataLen, subLen);
+    massPre(data, dataLen, subLen);
 idxOrder = randperm(profileLen);
 matrixProfile = inf(profileLen, 1);
 profileIndex = zeros(profileLen, 1);
@@ -150,12 +159,12 @@ for i = 1:profileLen
     end
     query = data(idx:idx+subLen-1);
     if i == 1
-        distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
+        distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
             data2Sum, dataSum, dataMean, data2Sig, dataSig);
         distanceProfile = abs(distanceProfile);
     else
         % replace with yan's method
-        distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
+        distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
             data2Sum, dataSum, dataMean, data2Sig, dataSig);
         distanceProfile = abs(distanceProfile);
     end
@@ -230,7 +239,7 @@ for i = 1:profileLen
             motifQuery = data(motifIdx:motifIdx+subLen-1);
             
             % find neighbors
-            motifDistanceProfile = fastfindNN(dataFreq, motifQuery, dataLen, subLen, ...
+            motifDistanceProfile = mass(dataFreq, motifQuery, dataLen, subLen, ...
                 data2Sum, dataSum, dataMean, data2Sig, dataSig);
             motifDistanceProfile = abs(motifDistanceProfile);
             motifDistanceProfile(motifDistanceProfile > motifDistance*radius) = inf;
@@ -347,7 +356,7 @@ for i = 1:profileLen
             end
             discordIdx(j) = profileIdxOrder(1);
             profileIdxOrder(1) = [];
-            profileIdxOrder(abs(profileIdxOrder - discordIdx(j))<exclusionZone) = [];
+            profileIdxOrder(abs(profileIdxOrder - discordIdx(j)) < exclusionZone) = [];
         end
         discordIdx(discordIdx == 0) = nan;
         
@@ -408,8 +417,6 @@ end
 function pushDiscardBtn(src, ~, btnNum)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
-% mainWindow.discardIdx = [mainWindow.discardIdx, ...
-%     mainWindow.motifIdxs{btnNum, 1}, mainWindow.motifIdxs{btnNum, 2}];
 mainWindow.discardIdx = [mainWindow.discardIdx, ...
     mainWindow.motifIdxs{btnNum, 1}];
 set(mainWindow.discard1Btn, 'enable', 'off');
@@ -432,7 +439,7 @@ set(mainWindow.fig, 'userdata', mainWindow);
 %% The following two functions are modified from the code provided in the following URL
 %  http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
 function [dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
-    fastfindNNPre(data, dataLen, subLen)
+    massPre(data, dataLen, subLen)
 data(dataLen+1:2*dataLen) = 0;
 dataFreq = fft(data);
 cum_sumx = cumsum(data);
@@ -444,7 +451,7 @@ data2Sig = (data2Sum./subLen)-(dataMean.^2);
 dataSig = sqrt(data2Sig);
 
 
-function distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
+function distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
     data2Sum, dataSum, dataMean, data2Sig, dataSig)
 query = (query-mean(query))./std(query,1);
 query = query(end:-1:1);
@@ -460,8 +467,8 @@ distanceProfile = sqrt(distanceProfile);
 
 
 function x = zeroOneNorm(x)
-x = x-min(x(~isinf(x) & ~isnan(x)));
-x = x/max(x(~isinf(x) & ~isnan(x)));
+x = x - min(x(~isinf(x) & ~isnan(x)));
+x = x / max(x(~isinf(x) & ~isnan(x)));
 
 
 function mainResize(src, ~)
