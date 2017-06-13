@@ -7,7 +7,7 @@
 %     matrixProfile: matrix porfile of the self-join (vector)
 %     profileIndex: matrix porfile index of the self-join (vector)
 %     motifIndex: index of the first, second, and third motifs and their 
-%                 associated nearest neighbors when stopped (3x2 cell)
+%                 associated neighbors when stopped (3x2 cell)
 %                 +-----------------------+----------------------------+
 %                 | indices for 1st motif | neighbors of the 1st motif |
 %                 +-----------------------+----------------------------+
@@ -18,7 +18,7 @@
 %     discordIndex: index of discords when stopped (vector)
 % Input:
 %     data: input time series (vector)
-%     subLen: interested subsequence length (scalar)
+%     subLen: subsequence length (scalar)
 %
 % Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, 
 % Yifei Ding, Hoang Anh Dau, Diego Furtado Silva, Abdullah Mueen, and 
