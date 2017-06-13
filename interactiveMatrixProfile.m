@@ -32,6 +32,8 @@ function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
 %% set trivial match exclusion zone and motif radius
 excZoneLen = round(subLen * 0.5);
 radius = 2;
+updatePeriod = 1;
+anytimeMode = 2;
 
 %% check input
 dataLen = length(data);
@@ -116,9 +118,14 @@ data(isnan(data) | isinf(data)) = 0;
 
 %% preprocess for matrix profile
 [dataFreq, dataMu, dataSig] = massPre(data, dataLen, subLen);
-idxOrder = randperm(proLen);
 matrixProfile = inf(proLen, 1);
 profileIndex = zeros(proLen, 1);
+if anytimeMode == 1
+    idxOrder = randperm(proLen);
+elseif anytimeMode == 2
+    idxOrder = excZoneLen + 1:proLen;
+    idxOrder = idxOrder(randperm(length(idxOrder)));
+end
 
 %% color and text settings
 txtTemp = {
@@ -136,7 +143,7 @@ mainWindow.discardIdx = [];
 set(mainWindow.fig, 'userdata', mainWindow);
 firstUpdate = true;
 timer = tic();
-for i = 1:proLen
+for i = 1:length(idxOrder)
     idx = idxOrder(i);
     if isSkip(idx)
         continue
@@ -145,32 +152,44 @@ for i = 1:proLen
     
     % compute the distance profile
     query = data(idx:idx+subLen-1);
-    if i == 1
+    if anytimeMode == 1
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
             dataMu, dataSig, dataMu(idx), dataSig(idx));
         distProfile = real(distProfile);
         distProfile = sqrt(distProfile);
-    else
-        distProfile = mass(dataFreq, query, dataLen, subLen, ...
-            dataMu, dataSig, dataMu(idx), dataSig(idx));
+        
+        distProfile(isSkip) = inf;
+        excZoneStart = max(1, idx - excZoneLen);
+        excZoneEnd = min(proLen, idx + excZoneLen);
+        distProfile(excZoneStart:excZoneEnd) = inf;
+        
+        updatePos = distProfile < matrixProfile;
+        profileIndex(updatePos) = idx;
+        matrixProfile(updatePos) = distProfile(updatePos);
+        [matrixProfile(idx), profileIndex(idx)] = min(distProfile);
+    elseif anytimeMode == 2
+        distProfile = diagonalDist(...
+            data, idx, dataLen, subLen, proLen, dataMu, dataSig);
         distProfile = real(distProfile);
         distProfile = sqrt(distProfile);
+        
+        pos1 = idx:proLen;
+        pos2 = 1:proLen - idx + 1;
+        
+        updatePos = matrixProfile(pos1) > distProfile;
+        profileIndex(pos1(updatePos)) = pos2(updatePos);
+        matrixProfile(pos1(updatePos)) = distProfile(updatePos);
+        updatePos = matrixProfile(pos2) > distProfile;
+        profileIndex(pos2(updatePos)) = pos1(updatePos);
+        matrixProfile(pos2(updatePos)) = distProfile(updatePos);
+        
+        matrixProfile(isSkip) = inf;
+        profileIndex(isSkip) = 0;
     end
-    
-    % apply exclusion and skip zone
-    distProfile(isSkip) = inf;
-    excZoneStart = max(1, idx - excZoneLen);
-    excZoneEnd = min(proLen, idx + excZoneLen);
-    distProfile(excZoneStart:excZoneEnd) = inf;
-    
-    % update matrix profile
-    updatePos = distProfile < matrixProfile;
-    profileIndex(updatePos) = idx;
-    matrixProfile(updatePos) = distProfile(updatePos);
-    [matrixProfile(idx), profileIndex(idx)] = min(distProfile);
+
     
     % check update condition
-    if toc(timer) < 1 && i ~= proLen
+    if toc(timer) < updatePeriod && i ~= length(idxOrder)
         continue;
     end
     
@@ -297,7 +316,7 @@ for i = 1:proLen
     set(mainWindow.dataText, 'string', ...
         sprintf(['We are %.1f%% done: The input time series: ', ...
         'The best-so-far motifs are color coded (see bottom panel)'], ...
-        i*100/proLen));
+        i * 100 / length(idxOrder)));
     set(mainWindow.discordText, 'string', ...
         sprintf(['The top three discords ', ...
         '%d(blue), %d(red), %d(green)'], ...
@@ -321,7 +340,7 @@ for i = 1:proLen
         set(mainWindow.fig, 'name', ...
             'UCR Interactive Matrix Profile Calculation (Stopped)');
     end
-    if i == proLen || mainWindow.stopping
+    if i == length(idxOrder) || mainWindow.stopping
         for j = 1:3
             set(mainWindow.discardBtn(j), 'enable', 'off');
         end
@@ -435,6 +454,22 @@ product = ifft(productFreq);
 distProfile = 2 * (subLen - ...
     (product(subLen:dataLen) - subLen * dataMu * queryMu) ./ ...
     (dataSig * querySig));
+
+
+function distProfile = diagonalDist(...
+    data, idx, dataLen, subLen, proLen, dataMu, dataSig)
+xTerm = ones(proLen - idx + 1, 1) * ...
+    (data(idx:idx + subLen - 1)' * data(1:subLen));
+mTerm = data(idx:proLen - 1) .* ...
+    data(1:proLen - idx);
+aTerm = data(idx + subLen:end) .* ...
+    data(subLen + 1:dataLen - idx + 1);
+xTerm(2:end) = xTerm(2:end) - cumsum(mTerm) + cumsum(aTerm);
+
+distProfile = (xTerm - ...
+    subLen .* dataMu(idx:end) .* dataMu(1:proLen - idx + 1)) ./ ...
+    (subLen .* dataSig(idx:end) .* dataSig(1:proLen - idx + 1));
+distProfile = 2 * subLen * (1 - distProfile);
 
 
 function x = zeroOneNorm(x)
