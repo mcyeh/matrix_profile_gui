@@ -29,12 +29,12 @@
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
     interactiveMatrixProfile(data, subLen)
-%% set trivial match exclusion zone and motif radius
+%% options for the algorithm
 excZoneLen = round(subLen * 0.5);
 radius = 2;
-updatePeriod = 1;
-anytimeMode = 2;
-titleTxt = 'UCR Interactive Matrix Profile Calculation 2.0';
+updatePeriod = 1; % in second
+anytimeMode = 2; % 1: original with mass O(n^2 log n); 
+                 % 2: new diagnal method O(n^2)
 
 %% check input
 dataLen = length(data);
@@ -53,6 +53,7 @@ if dataLen == size(data, 2)
 end
 
 %% spawn main window
+titleTxt = 'UCR Interactive Matrix Profile Calculation 2.0';
 mainWindow.fig = figure('name', titleTxt, ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
 backColor = get(mainWindow.fig, 'color');
