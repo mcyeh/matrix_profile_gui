@@ -53,18 +53,15 @@ mainWindow.fig = figure('name', ...
 
 %% add UI element into the window
 backColor = get(mainWindow.fig, 'color');
-mainWindow.dataAx = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.profileAx = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.motif1Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.motif2Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.motif3Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.discordAx = axes('parent', mainWindow.fig, 'units', 'pixels');
-mainWindow.discardBtn = zeros(3, 1);
-for i = 1:3
-    mainWindow.discardBtn(i) = uicontrol('parent',mainWindow.fig, ...
-        'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
-        'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
-end
+mainWindow.dataAx = axes('parent', mainWindow.fig, ...
+    'units', 'pixels', 'xlim', [1, dataLen], 'xtick', [1, dataLen], ...
+    'ylim', [-0.05, 1.05], 'ytick', [], 'ycolor', [1, 1, 1]);
+mainWindow.profileAx = axes('parent', mainWindow.fig, ...
+    'units', 'pixels', 'xlim', [1, dataLen], 'xtick', [1, dataLen], ...
+    'ylim', [0, 2*sqrt(subLen)]);
+mainWindow.discordAx = axes('parent', mainWindow.fig, ...
+    'units', 'pixels', 'xlim', [1, subLen], 'xtick', [1, subLen], ...
+    'ylim', [-0.05, 1.05], 'ytick', [], 'ycolor', [1, 1, 1]);
 mainWindow.stopBtn = uicontrol('parent', mainWindow.fig, ...
     'style', 'pushbutton', 'string', 'Stop', 'fontsize', 10, ...
     'callback', @pushStopBtn);
@@ -75,48 +72,27 @@ mainWindow.profileText = uicontrol('parent', mainWindow.fig, ...
     'style', 'text', 'string', 'The best-so-far matrix profile', ...
     'fontsize', 10, 'backgroundcolor', backColor, ...
     'horizontalalignment', 'left');
-mainWindow.motif1Text = uicontrol('parent', mainWindow.fig, ...
-    'style', 'text', 'string', '', 'fontsize', 10, ...
-    'backgroundcolor', backColor, 'horizontalalignment', 'left');
-mainWindow.motif2Text = uicontrol('parent', mainWindow.fig, ...
-    'style', 'text', 'string', '', 'fontsize', 10, ...
-    'backgroundcolor', backColor, 'horizontalalignment', 'left');
-mainWindow.motif3Text = uicontrol('parent', mainWindow.fig, ...
-    'style', 'text', 'string', '', 'fontsize', 10, ...
-    'backgroundcolor', backColor, 'horizontalalignment', 'left');
 mainWindow.discordText = uicontrol('parent', mainWindow.fig, ...
     'style', 'text', 'string', '', 'fontsize', 10, ...
     'backgroundcolor', backColor, 'horizontalalignment', 'left');
-
-%% modify the properties of the axis
-set(mainWindow.dataAx,'xlim', [1, dataLen]);
-set(mainWindow.dataAx,'xtick', [1, dataLen]);
-set(mainWindow.dataAx,'ylim', [-0.05, 1.05]);
-set(mainWindow.dataAx,'ytick', []);
-set(mainWindow.dataAx,'ycolor', [1 1 1]);
-set(mainWindow.profileAx,'xlim', [1, dataLen]);
-set(mainWindow.profileAx,'xtick', [1, dataLen]);
-set(mainWindow.profileAx,'ylim', [0, 2*sqrt(subLen)]);
-set(mainWindow.motif1Ax,'xlim', [1, subLen]);
-set(mainWindow.motif1Ax,'xtick', [1, subLen]);
-set(mainWindow.motif1Ax,'ylim', [-0.05, 1.05]);
-set(mainWindow.motif1Ax,'ytick', []);
-set(mainWindow.motif1Ax,'ycolor', [1 1 1]);
-set(mainWindow.motif2Ax,'xlim', [1, subLen]);
-set(mainWindow.motif2Ax,'xtick', [1, subLen]);
-set(mainWindow.motif2Ax,'ylim', [-0.05, 1.05]);
-set(mainWindow.motif2Ax,'ytick', []);
-set(mainWindow.motif2Ax,'ycolor', [1 1 1]);
-set(mainWindow.motif3Ax,'xlim', [1, subLen]);
-set(mainWindow.motif3Ax,'xtick', [1, subLen]);
-set(mainWindow.motif3Ax,'ylim', [-0.05, 1.05]);
-set(mainWindow.motif3Ax,'ytick', []);
-set(mainWindow.motif3Ax,'ycolor', [1 1 1]);
-set(mainWindow.discordAx,'xlim', [1, subLen]);
-set(mainWindow.discordAx,'xtick', [1, subLen]);
-set(mainWindow.discordAx,'ylim', [-0.05, 1.05]);
-set(mainWindow.discordAx,'ytick', []);
-set(mainWindow.discordAx,'ycolor', [1 1 1]);
+mainWindow.motifAx = zeros(3, 1);
+for i = 1:3
+    mainWindow.motifAx(i) = axes('parent', mainWindow.fig, ...
+        'units', 'pixels', 'xlim', [1, subLen], 'xtick', [1, subLen], ...
+        'ylim', [-0.05, 1.05], 'ytick', [], 'ycolor', [1, 1, 1]);
+end
+mainWindow.motifText = zeros(3, 1);
+for i = 1:3
+    mainWindow.motifText(i) = uicontrol('parent', mainWindow.fig, ...
+        'style', 'text', 'string', '', 'fontsize', 10, ...
+        'backgroundcolor', backColor, 'horizontalalignment', 'left');
+end
+mainWindow.discardBtn = zeros(3, 1);
+for i = 1:3
+    mainWindow.discardBtn(i) = uicontrol('parent',mainWindow.fig, ...
+        'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
+        'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
+end
 
 %% plot data
 dataPlot = zeroOneNorm(data);
@@ -142,6 +118,11 @@ matrixProfile = inf(profileLen, 1);
 profileIndex = zeros(profileLen, 1);
 
 %% iteratively plot
+txtTemp = {
+    'The best-so-far 1st motifs are located at %d (green) and %d (cyan)';
+    'The best-so-far 2nd motifs are located at %d (green) and %d (cyan)';
+    'The best-so-far 3rd motifs are located at %d (green) and %d (cyan)';
+    };
 mainWindow.stopping = false;
 mainWindow.discardIdx = [];
 set(mainWindow.fig, 'userdata', mainWindow);
@@ -191,7 +172,8 @@ for i = 1:profileLen
             delete(prefilePlot);
         end
         hold(mainWindow.profileAx, 'on');
-        prefilePlot = plot(1:profileLen, matrixProfile, 'b', 'parent', mainWindow.profileAx);
+        prefilePlot = plot(1:profileLen, matrixProfile, ...
+            'b', 'parent', mainWindow.profileAx);
         hold(mainWindow.profileAx, 'off');
         
         % remove motif
@@ -289,22 +271,13 @@ for i = 1:profileLen
             motifMotifPlot{j, 2} = zeros(length(motifIdxs{j, 2}), 1);
             for k = 1:length(motifIdxs{j, 2})
                 neighborPos = motifIdxs{j, 2}(k):motifIdxs{j, 2}(k)+subLen-1;
-                if j == 1
-                    hold(mainWindow.motif1Ax, 'on');
-                    motifMotifPlot{j, 2}(k) = plot(1:subLen, zeroOneNorm(dataPlot(neighborPos)),...
-                        'color', neighborColor, 'linewidth', 2, 'parent', mainWindow.motif1Ax);
-                    hold(mainWindow.motif1Ax, 'off');
-                elseif j == 2
-                    hold(mainWindow.motif2Ax, 'on');
-                    motifMotifPlot{j, 2}(k) = plot(1:subLen, zeroOneNorm(dataPlot(neighborPos)),...
-                        'color', neighborColor, 'linewidth', 2, 'parent', mainWindow.motif2Ax);
-                    hold(mainWindow.motif2Ax, 'off');
-                elseif j == 3
-                    hold(mainWindow.motif3Ax, 'on');
-                    motifMotifPlot{j, 2}(k) = plot(1:subLen, zeroOneNorm(dataPlot(neighborPos)),...
-                        'color', neighborColor, 'linewidth', 2, 'parent', mainWindow.motif3Ax);
-                    hold(mainWindow.motif3Ax, 'off');
-                end
+                
+                hold(mainWindow.motifAx(j), 'on');
+                motifMotifPlot{j, 2}(k) = plot(1:subLen, ...
+                    zeroOneNorm(dataPlot(neighborPos)),...
+                    'color', neighborColor, 'linewidth', 2, ...
+                    'parent', mainWindow.motifAx(j));
+                hold(mainWindow.motifAx(j), 'off');
             end
         end
         
@@ -313,31 +286,15 @@ for i = 1:profileLen
             motifMotifPlot{j, 1} = zeros(2, 1);
             for k = 1:2
                 motifPos = motifIdxs{j, 1}(k):motifIdxs{j, 1}(k)+subLen-1;
-                if j == 1
-                    hold(mainWindow.motif1Ax, 'on');
-                    set(mainWindow.motif1Text, 'string', ...
-                        sprintf('The best-so-far 1st motifs are located at %d (green) and %d (cyan)', ...
-                        motifIdxs{j, 1}(1), motifIdxs{j, 1}(2)));
-                    motifMotifPlot{j, 1}(k) = plot(1:subLen, zeroOneNorm(dataPlot(motifPos)),...
-                        motifColor{k}, 'parent', mainWindow.motif1Ax);
-                    hold(mainWindow.motif1Ax, 'off');
-                elseif j == 2
-                    hold(mainWindow.motif2Ax, 'on');
-                    set(mainWindow.motif2Text, 'string', ...
-                        sprintf('The best-so-far 2nd motifs are located at %d (green) and %d (cyan)', ...
-                        motifIdxs{j, 1}(1), motifIdxs{j, 1}(2)));
-                    motifMotifPlot{j, 1}(k) = plot(1:subLen, zeroOneNorm(dataPlot(motifPos)),...
-                        motifColor{k}, 'parent', mainWindow.motif2Ax);
-                    hold(mainWindow.motif2Ax, 'off');
-                elseif j == 3
-                    hold(mainWindow.motif3Ax, 'on');
-                    set(mainWindow.motif3Text, 'string', ...
-                        sprintf('The best-so-far 3rd motifs are located at %d (green) and %d (cyan)', ...
-                        motifIdxs{j, 1}(1), motifIdxs{j, 1}(2)));
-                    motifMotifPlot{j, 1}(k) = plot(1:subLen, zeroOneNorm(dataPlot(motifPos)),...
-                        motifColor{k}, 'parent', mainWindow.motif3Ax);
-                    hold(mainWindow.motif3Ax, 'off');
-                end
+                
+                hold(mainWindow.motifAx(j), 'on');
+                set(mainWindow.motifText(j), 'string', ...
+                    sprintf(txtTemp{j}, ...
+                    motifIdxs{j, 1}(1), motifIdxs{j, 1}(2)));
+                motifMotifPlot{j, 1}(k) = plot(1:subLen, ...
+                    zeroOneNorm(dataPlot(motifPos)),...
+                    motifColor{k}, 'parent', mainWindow.motifAx(j));
+                hold(mainWindow.motifAx(j), 'off');
             end
         end
         
@@ -388,11 +345,13 @@ for i = 1:profileLen
         mainWindow.motifIdxs = motifIdxs;
         set(mainWindow.fig, 'userdata', mainWindow);
         if mainWindow.stopping
-            set(mainWindow.fig, 'name', 'UCR Interactive Matrix Profile Calculation (Stopped)');
+            set(mainWindow.fig, 'name', ...
+                'UCR Interactive Matrix Profile Calculation (Stopped)');
             return;
         end
         if i == profileLen
-            set(mainWindow.fig, 'name', 'UCR Interactive Matrix Profile Calculation (Completed)');
+            set(mainWindow.fig, 'name', ...
+                'UCR Interactive Matrix Profile Calculation (Completed)');
             for j = 1:3
                 set(mainWindow.discardBtn(j), 'enable', 'off');
             end
@@ -471,34 +430,33 @@ function mainResize(src, ~)
 mainWindow = get(src, 'userdata');
 figPosition = get(mainWindow.fig, 'position');
 axGap = 38;
-axesHeight = round((figPosition(4)-axGap*5-60)/6);
+axesHeight = round((figPosition(4) - axGap * 5 - 60) / 6);
 set(mainWindow.dataAx, 'position', ...
-    [30, 5*axesHeight+5*axGap+30, figPosition(3)-60, axesHeight]);
+    [30, 5 * axesHeight+5 * axGap + 30, figPosition(3) - 60, axesHeight]);
 set(mainWindow.profileAx, 'position', ...
-    [30, 4*axesHeight+4*axGap+30, figPosition(3)-60, axesHeight]);
-set(mainWindow.motif1Ax, 'position', ...
-    [30, 3*axesHeight+3*axGap+30, figPosition(3)-160, axesHeight]);
-set(mainWindow.motif2Ax, 'position', ...
-    [30, 2*axesHeight+2*axGap+30, figPosition(3)-160, axesHeight]);
-set(mainWindow.motif3Ax, 'position', ...
-    [30, 1*axesHeight+1*axGap+30, figPosition(3)-160, axesHeight]);
+    [30, 4 * axesHeight+4 * axGap + 30, figPosition(3) - 60, axesHeight]);
 set(mainWindow.discordAx, 'position', ...
-    [30, 30, figPosition(3)-160, axesHeight]);
+    [30, 30, figPosition(3) - 160, axesHeight]);
+set(mainWindow.stopBtn, 'position', ...
+    [figPosition(3) - 120, 30, 90, 20]);
+set(mainWindow.dataText, 'position', ...
+    [30, 6 * axesHeight + 5 * axGap + 30, figPosition(3) - 60, 18]);
+set(mainWindow.profileText, 'position', ...
+    [30, 5 * axesHeight + 4 * axGap + 30, figPosition(3) - 60, 18]);
+set(mainWindow.discordText, 'position', ...
+    [30, 1 * axesHeight + 30, figPosition(3) - 160, 18]);
+for i = 1:3
+    set(mainWindow.motifAx(i), 'position', ...
+    [30, (4 - i) * axesHeight + (4 - i) * axGap + 30, ...
+    figPosition(3) - 160, axesHeight]);
+end
+for i = 1:3
+    set(mainWindow.motifText(i), 'position', ...
+    [30, (5 - i) * axesHeight + (4 - i) * axGap + 30, ...
+    figPosition(3) - 160, 18]);
+end
 for i = 1:3
     set(mainWindow.discardBtn(i), 'position', ...
-    [figPosition(3)-120, (4-i)*axesHeight+(4-i)*axGap+30, 90, 20]);
+    [figPosition(3) - 120, ...
+    (4 - i) * axesHeight + (4 - i) * axGap + 30, 90, 20]);
 end
-set(mainWindow.stopBtn, 'position', ...
-    [figPosition(3)-120, 30, 90, 20]);
-set(mainWindow.dataText, 'position', ...
-    [30, 6*axesHeight+5*axGap+30, figPosition(3)-60, 18]);
-set(mainWindow.profileText, 'position', ...
-    [30, 5*axesHeight+4*axGap+30, figPosition(3)-60, 18]);
-set(mainWindow.motif1Text, 'position', ...
-    [30, 4*axesHeight+3*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.motif2Text, 'position', ...
-    [30, 3*axesHeight+2*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.motif3Text, 'position', ...
-    [30, 2*axesHeight+1*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.discordText, 'position', ...
-    [30, 1*axesHeight+30, figPosition(3)-160, 18]);
