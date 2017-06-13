@@ -185,7 +185,6 @@ for i = 1:length(idxOrder)
         matrixProfile(isSkip) = inf;
         profileIndex(isSkip) = 0;
     end
-
     
     % check update condition
     if toc(timer) < updatePeriod && i ~= length(idxOrder)
