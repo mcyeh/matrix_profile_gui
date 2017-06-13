@@ -129,11 +129,13 @@ set(mainWindow.fig, 'userdata', mainWindow);
 firstUpdate = true;
 timer = tic();
 for i = 1:profileLen
-    % compute the distance profile
     idx = idxOrder(i);
     if isSkip(idx)
        continue 
     end
+    drawnow;
+    
+    % compute the distance profile
     query = data(idx:idx+subLen-1);
     if i == 1
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
@@ -141,7 +143,6 @@ for i = 1:profileLen
         distProfile = real(distProfile);
         distProfile = sqrt(distProfile);
     else
-        % replace with yan's method
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
             dataMu, dataSig, dataMu(idx), dataSig(idx));
         distProfile = real(distProfile);
@@ -366,7 +367,6 @@ for i = 1:profileLen
         for j = 1:3
             set(mainWindow.discardBtn(j), 'enable', 'on');
         end
-        pause(0.01);
         timer = tic();
     end
 end
