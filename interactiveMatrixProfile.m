@@ -104,15 +104,15 @@ hold(mainWindow.dataAx, 'off');
 profileLen = dataLen - subLen + 1;
 isSkip = false(profileLen, 1);
 for i = 1:profileLen
-    if any(isnan(data(i:i+subLen-1))) || any(isinf(data(i:i+subLen-1)))
+    if any(isnan(data(i:i + subLen - 1))) || ...
+            any(isinf(data(i:i + subLen - 1)))
         isSkip(i) = true;
     end
 end
-data(isnan(data)|isinf(data)) = 0;
+data(isnan(data) | isinf(data)) = 0;
     
 %% preprocess for matrix profile
-[dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
-    massPre(data, dataLen, subLen);
+[dataFreq, dataMu, dataSig] = massPre(data, dataLen, subLen);
 idxOrder = randperm(profileLen);
 matrixProfile = inf(profileLen, 1);
 profileIndex = zeros(profileLen, 1);
@@ -136,34 +136,36 @@ for i = 1:profileLen
     end
     query = data(idx:idx+subLen-1);
     if i == 1
-        distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
-            data2Sum, dataSum, dataMean, data2Sig, dataSig);
-        distanceProfile = abs(distanceProfile);
+        distProfile = mass(dataFreq, query, dataLen, subLen, ...
+            dataMu, dataSig, dataMu(idx), dataSig(idx));
+        distProfile = real(distProfile);
+        distProfile = sqrt(distProfile);
     else
         % replace with yan's method
-        distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
-            data2Sum, dataSum, dataMean, data2Sig, dataSig);
-        distanceProfile = abs(distanceProfile);
+        distProfile = mass(dataFreq, query, dataLen, subLen, ...
+            dataMu, dataSig, dataMu(idx), dataSig(idx));
+        distProfile = real(distProfile);
+        distProfile = sqrt(distProfile);
     end
     
     % apply skip zone
-    distanceProfile(isSkip) = inf;
+    distProfile(isSkip) = inf;
     
     % apply exclusion zone
     exclusionZoneStart = max(1, idx-exclusionZone);
     exclusionZoneEnd = min(profileLen, idx+exclusionZone);
-    distanceProfile(exclusionZoneStart:exclusionZoneEnd) = inf;
+    distProfile(exclusionZoneStart:exclusionZoneEnd) = inf;
     
     % figure out and store the neareest neighbor
     if i == 1
-        matrixProfile = distanceProfile;
+        matrixProfile = distProfile;
         profileIndex(:) = idx;
     else
-        updatePos = distanceProfile < matrixProfile;
+        updatePos = distProfile < matrixProfile;
         profileIndex(updatePos) = idx;
-        matrixProfile(updatePos) = distanceProfile(updatePos);
+        matrixProfile(updatePos) = distProfile(updatePos);
     end
-    [matrixProfile(idx), profileIndex(idx)] = min(distanceProfile);
+    [matrixProfile(idx), profileIndex(idx)] = min(distProfile);
     
     % plotting
     if toc(timer) > 1 || i == profileLen
@@ -217,19 +219,20 @@ for i = 1:profileLen
             motifQuery = data(motifIdx:motifIdx+subLen-1);
             
             % find neighbors
-            motifDistanceProfile = mass(dataFreq, motifQuery, dataLen, subLen, ...
-                data2Sum, dataSum, dataMean, data2Sig, dataSig);
-            motifDistanceProfile = abs(motifDistanceProfile);
-            motifDistanceProfile(motifDistanceProfile > motifDistance*radius) = inf;
+            motifDistProfile = mass(dataFreq, motifQuery, ...
+                dataLen, subLen, dataMu, dataSig, ...
+                dataMu(motifIdx), dataSig(motifIdx));
+            motifDistProfile = abs(motifDistProfile);
+            motifDistProfile(motifDistProfile > motifDistance*radius) = inf;
             motifZoneStart = max(1, motifIdx-exclusionZone);
             motifZoneEnd = min(profileLen, motifIdx+exclusionZone);
-            motifDistanceProfile(motifZoneStart:motifZoneEnd) = inf;
+            motifDistProfile(motifZoneStart:motifZoneEnd) = inf;
             motifIdx = motifIdxs{j, 1}(2);
             motifZoneStart = max(1, motifIdx-exclusionZone);
             motifZoneEnd = min(profileLen, motifIdx+exclusionZone);
-            motifDistanceProfile(motifZoneStart:motifZoneEnd) = inf;
-            motifDistanceProfile(isSkip) = inf;
-            [distanceOrder, distanceIdxOrder] = sort(motifDistanceProfile, 'ascend');
+            motifDistProfile(motifZoneStart:motifZoneEnd) = inf;
+            motifDistProfile(isSkip) = inf;
+            [distanceOrder, distanceIdxOrder] = sort(motifDistProfile, 'ascend');
             motifNeighbor = zeros(1, 10);
             for k = 1:10
                 if isinf(distanceOrder(1)) || length(distanceOrder) < k
@@ -393,32 +396,30 @@ set(mainWindow.fig, 'userdata', mainWindow);
 
 %% The following two functions are modified from the code provided in the following URL
 %  http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
-function [dataFreq, data2Sum, dataSum, dataMean, data2Sig, dataSig] = ...
-    massPre(data, dataLen, subLen)
-data(dataLen+1:2*dataLen) = 0;
+function [dataFreq, dataMu, dataSig] = massPre(data, dataLen, subLen)
+data(dataLen + 1:(subLen + dataLen)) = 0;
 dataFreq = fft(data);
-cum_sumx = cumsum(data);
-cum_sumx2 =  cumsum(data.^2);
-data2Sum = cum_sumx2(subLen:dataLen)-[0;cum_sumx2(1:dataLen-subLen)];
-dataSum = cum_sumx(subLen:dataLen)-[0;cum_sumx(1:dataLen-subLen)];
-dataMean = dataSum./subLen;
-data2Sig = (data2Sum./subLen)-(dataMean.^2);
+dataCumsum = cumsum(data);
+data2Cumsum =  cumsum(data .^ 2);
+data2Sum = data2Cumsum(subLen:dataLen) - ...
+    [0; data2Cumsum(1:dataLen - subLen)];
+dataSum = dataCumsum(subLen:dataLen) - ...
+    [0; dataCumsum(1:dataLen - subLen)];
+dataMu = dataSum ./ subLen;
+data2Sig = (data2Sum ./ subLen) - (dataMu .^ 2);
 dataSig = sqrt(data2Sig);
 
 
-function distanceProfile = mass(dataFreq, query, dataLen, subLen, ...
-    data2Sum, dataSum, dataMean, data2Sig, dataSig)
-query = (query-mean(query))./std(query,1);
+function distProfile = mass(dataFreq, query, ...
+    dataLen, subLen, dataMu, dataSig, queryMu, querySig)
 query = query(end:-1:1);
-query(subLen+1:2*dataLen) = 0;
+query(subLen+1:(subLen+dataLen)) = 0;
 queryFreq = fft(query);
-dataQueryProdFreq = dataFreq.*queryFreq;
-dataQueryProd = ifft(dataQueryProdFreq);
-querySum = sum(query);
-query2Sum = sum(query.^2);
-distanceProfile = (data2Sum - 2*dataSum.*dataMean + subLen*(dataMean.^2))./data2Sig ...
-    - 2*(dataQueryProd(subLen:dataLen) - querySum.*dataMean)./dataSig + query2Sum;
-distanceProfile = sqrt(distanceProfile);
+productFreq = dataFreq .* queryFreq;
+product = ifft(productFreq);
+distProfile = 2 * (subLen - ...
+    (product(subLen:dataLen) - subLen * dataMu * queryMu) ./ ...
+    (dataSig * querySig));
 
 
 function x = zeroOneNorm(x)
