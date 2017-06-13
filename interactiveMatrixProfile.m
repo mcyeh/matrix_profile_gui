@@ -27,7 +27,6 @@ function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
     interactiveMatrixProfile(data, subLen)
 %% set trivial match exclusion zone
 exclusionZone = round(subLen/2);
-% exclusionZone = round(subLen/4);
 radius = 2;
 
 %% check input
@@ -86,24 +85,30 @@ mainWindow.discordText = uicontrol('parent',mainWindow.fig, 'style', 'text',...
 
 %% modify the properties of the axis
 set(mainWindow.dataAx,'xlim',[1, dataLen]);
+set(mainWindow.dataAx,'xtick',[1, dataLen]);
 set(mainWindow.dataAx,'ylim',[-0.05, 1.05]);
 set(mainWindow.dataAx,'ytick',[]);
 set(mainWindow.dataAx,'ycolor',[1 1 1]);
 set(mainWindow.profileAx,'xlim',[1, dataLen]);
+set(mainWindow.profileAx,'xtick',[1, dataLen]);
 set(mainWindow.profileAx,'ylim',[0, 2*sqrt(subLen)]);
 set(mainWindow.motif1Ax,'xlim',[1, subLen]);
+set(mainWindow.motif1Ax,'xtick',[1, subLen]);
 set(mainWindow.motif1Ax,'ylim',[-0.05, 1.05]);
 set(mainWindow.motif1Ax,'ytick',[]);
 set(mainWindow.motif1Ax,'ycolor',[1 1 1]);
 set(mainWindow.motif2Ax,'xlim',[1, subLen]);
+set(mainWindow.motif2Ax,'xtick',[1, subLen]);
 set(mainWindow.motif2Ax,'ylim',[-0.05, 1.05]);
 set(mainWindow.motif2Ax,'ytick',[]);
 set(mainWindow.motif2Ax,'ycolor',[1 1 1]);
 set(mainWindow.motif3Ax,'xlim',[1, subLen]);
+set(mainWindow.motif3Ax,'xtick',[1, subLen]);
 set(mainWindow.motif3Ax,'ylim',[-0.05, 1.05]);
 set(mainWindow.motif3Ax,'ytick',[]);
 set(mainWindow.motif3Ax,'ycolor',[1 1 1]);
 set(mainWindow.discordAx,'xlim',[1, subLen]);
+set(mainWindow.discordAx,'xtick',[1, subLen]);
 set(mainWindow.discordAx,'ylim',[-0.05, 1.05]);
 set(mainWindow.discordAx,'ytick',[]);
 set(mainWindow.discordAx,'ycolor',[1 1 1]);
@@ -399,6 +404,7 @@ for i = 1:profileLen
     end
 end
 
+
 function pushDiscardBtn(src, ~, btnNum)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
@@ -411,6 +417,7 @@ set(mainWindow.discard2Btn, 'enable', 'off');
 set(mainWindow.discard3Btn, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
 
+
 function pushStopBtn(src, ~)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
@@ -420,6 +427,7 @@ set(mainWindow.discard2Btn, 'enable', 'off');
 set(mainWindow.discard3Btn, 'enable', 'off');
 set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
+
 
 %% The following two functions are modified from the code provided in the following URL
 %  http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
@@ -435,6 +443,7 @@ dataMean = dataSum./subLen;
 data2Sig = (data2Sum./subLen)-(dataMean.^2);
 dataSig = sqrt(data2Sig);
 
+
 function distanceProfile = fastfindNN(dataFreq, query, dataLen, subLen, ...
     data2Sum, dataSum, dataMean, data2Sig, dataSig)
 query = (query-mean(query))./std(query,1);
@@ -449,28 +458,46 @@ distanceProfile = (data2Sum - 2*dataSum.*dataMean + subLen*(dataMean.^2))./data2
     - 2*(dataQueryProd(subLen:dataLen) - querySum.*dataMean)./dataSig + query2Sum;
 distanceProfile = sqrt(distanceProfile);
 
+
 function x = zeroOneNorm(x)
 x = x-min(x(~isinf(x) & ~isnan(x)));
 x = x/max(x(~isinf(x) & ~isnan(x)));
+
 
 function mainResize(src, ~)
 mainWindow = get(src, 'userdata');
 figPosition = get(mainWindow.fig, 'position');
 axGap = 38;
 axesHeight = round((figPosition(4)-axGap*5-60)/6);
-set(mainWindow.dataAx, 'position', [30, 5*axesHeight+5*axGap+30, figPosition(3)-60, axesHeight]);
-set(mainWindow.profileAx, 'position', [30, 4*axesHeight+4*axGap+30, figPosition(3)-60, axesHeight]);
-set(mainWindow.motif1Ax, 'position', [30, 3*axesHeight+3*axGap+30, figPosition(3)-160, axesHeight]);
-set(mainWindow.motif2Ax, 'position', [30, 2*axesHeight+2*axGap+30, figPosition(3)-160, axesHeight]);
-set(mainWindow.motif3Ax, 'position', [30, 1*axesHeight+1*axGap+30, figPosition(3)-160, axesHeight]);
-set(mainWindow.discordAx, 'position', [30, 30, figPosition(3)-160, axesHeight]);
-set(mainWindow.discard1Btn, 'position', [figPosition(3)-120, 3*axesHeight+3*axGap+30, 90, 20]);
-set(mainWindow.discard2Btn, 'position', [figPosition(3)-120, 2*axesHeight+2*axGap+30, 90, 20]);
-set(mainWindow.discard3Btn, 'position', [figPosition(3)-120, 1*axesHeight+1*axGap+30, 90, 20]);
-set(mainWindow.stopBtn, 'position', [figPosition(3)-120, 30, 90, 20]);
-set(mainWindow.dataText, 'position', [30, 6*axesHeight+5*axGap+30, figPosition(3)-60, 18]);
-set(mainWindow.profileText, 'position', [30, 5*axesHeight+4*axGap+30, figPosition(3)-60, 18]);
-set(mainWindow.motif1Text, 'position', [30, 4*axesHeight+3*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.motif2Text, 'position', [30, 3*axesHeight+2*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.motif3Text, 'position', [30, 2*axesHeight+1*axGap+30, figPosition(3)-160, 18]);
-set(mainWindow.discordText, 'position', [30, 1*axesHeight+30, figPosition(3)-160, 18]);
+set(mainWindow.dataAx, 'position', ...
+    [30, 5*axesHeight+5*axGap+30, figPosition(3)-60, axesHeight]);
+set(mainWindow.profileAx, 'position', ...
+    [30, 4*axesHeight+4*axGap+30, figPosition(3)-60, axesHeight]);
+set(mainWindow.motif1Ax, 'position', ...
+    [30, 3*axesHeight+3*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.motif2Ax, 'position', ...
+    [30, 2*axesHeight+2*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.motif3Ax, 'position', ...
+    [30, 1*axesHeight+1*axGap+30, figPosition(3)-160, axesHeight]);
+set(mainWindow.discordAx, 'position', ...
+    [30, 30, figPosition(3)-160, axesHeight]);
+set(mainWindow.discard1Btn, 'position', ...
+    [figPosition(3)-120, 3*axesHeight+3*axGap+30, 90, 20]);
+set(mainWindow.discard2Btn, 'position', ...
+    [figPosition(3)-120, 2*axesHeight+2*axGap+30, 90, 20]);
+set(mainWindow.discard3Btn, 'position', ...
+    [figPosition(3)-120, 1*axesHeight+1*axGap+30, 90, 20]);
+set(mainWindow.stopBtn, 'position', ...
+    [figPosition(3)-120, 30, 90, 20]);
+set(mainWindow.dataText, 'position', ...
+    [30, 6*axesHeight+5*axGap+30, figPosition(3)-60, 18]);
+set(mainWindow.profileText, 'position', ...
+    [30, 5*axesHeight+4*axGap+30, figPosition(3)-60, 18]);
+set(mainWindow.motif1Text, 'position', ...
+    [30, 4*axesHeight+3*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.motif2Text, 'position', ...
+    [30, 3*axesHeight+2*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.motif3Text, 'position', ...
+    [30, 2*axesHeight+1*axGap+30, figPosition(3)-160, 18]);
+set(mainWindow.discordText, 'position', ...
+    [30, 1*axesHeight+30, figPosition(3)-160, 18]);
