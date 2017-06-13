@@ -1,3 +1,3 @@
-# matrix_profile_gui
+# Interactive Matrix Profile
 
 http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
