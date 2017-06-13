@@ -60,15 +60,11 @@ mainWindow.motif2Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
 mainWindow.motif3Ax = axes('parent', mainWindow.fig, 'units', 'pixels');
 mainWindow.discordAx = axes('parent', mainWindow.fig, 'units', 'pixels');
 mainWindow.discardBtn = zeros(3, 1);
-mainWindow.discard1Btn = uicontrol('parent',mainWindow.fig, ...
-    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
-    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 1));
-mainWindow.discard2Btn = uicontrol('parent', mainWindow.fig, ...
-    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
-    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 2));
-mainWindow.discard3Btn = uicontrol('parent', mainWindow.fig, ...
-    'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
-    'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, 3));
+for i = 1:3
+    mainWindow.discardBtn(i) = uicontrol('parent',mainWindow.fig, ...
+        'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
+        'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
+end
 mainWindow.stopBtn = uicontrol('parent', mainWindow.fig, ...
     'style', 'pushbutton', 'string', 'Stop', 'fontsize', 10, ...
     'callback', @pushStopBtn);
@@ -397,17 +393,17 @@ for i = 1:profileLen
         end
         if i == profileLen
             set(mainWindow.fig, 'name', 'UCR Interactive Matrix Profile Calculation (Completed)');
-            set(mainWindow.discard1Btn, 'enable', 'off');
-            set(mainWindow.discard2Btn, 'enable', 'off');
-            set(mainWindow.discard3Btn, 'enable', 'off');
+            for j = 1:3
+                set(mainWindow.discardBtn(j), 'enable', 'off');
+            end
             set(mainWindow.stopBtn, 'enable', 'off');
             return;
         end
         
         % pause for plot and restart timer
-        set(mainWindow.discard1Btn, 'enable', 'on');
-        set(mainWindow.discard2Btn, 'enable', 'on');
-        set(mainWindow.discard3Btn, 'enable', 'on');
+        for j = 1:3
+            set(mainWindow.discardBtn(j), 'enable', 'on');
+        end
         pause(0.01);
         timer = tic();
     end
@@ -419,9 +415,9 @@ mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
 mainWindow.discardIdx = [mainWindow.discardIdx, ...
     mainWindow.motifIdxs{btnNum, 1}];
-set(mainWindow.discard1Btn, 'enable', 'off');
-set(mainWindow.discard2Btn, 'enable', 'off');
-set(mainWindow.discard3Btn, 'enable', 'off');
+for i = 1:3
+    set(mainWindow.discardBtn(i), 'enable', 'off');
+end
 set(mainWindow.fig, 'userdata', mainWindow);
 
 
@@ -429,9 +425,9 @@ function pushStopBtn(src, ~)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
 mainWindow.stopping = true;
-set(mainWindow.discard1Btn, 'enable', 'off');
-set(mainWindow.discard2Btn, 'enable', 'off');
-set(mainWindow.discard3Btn, 'enable', 'off');
+for i = 1:3
+    set(mainWindow.discardBtn(i), 'enable', 'off');
+end
 set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
 
@@ -488,12 +484,10 @@ set(mainWindow.motif3Ax, 'position', ...
     [30, 1*axesHeight+1*axGap+30, figPosition(3)-160, axesHeight]);
 set(mainWindow.discordAx, 'position', ...
     [30, 30, figPosition(3)-160, axesHeight]);
-set(mainWindow.discard1Btn, 'position', ...
-    [figPosition(3)-120, 3*axesHeight+3*axGap+30, 90, 20]);
-set(mainWindow.discard2Btn, 'position', ...
-    [figPosition(3)-120, 2*axesHeight+2*axGap+30, 90, 20]);
-set(mainWindow.discard3Btn, 'position', ...
-    [figPosition(3)-120, 1*axesHeight+1*axGap+30, 90, 20]);
+for i = 1:3
+    set(mainWindow.discardBtn(i), 'position', ...
+    [figPosition(3)-120, (4-i)*axesHeight+(4-i)*axGap+30, 90, 20]);
+end
 set(mainWindow.stopBtn, 'position', ...
     [figPosition(3)-120, 30, 90, 20]);
 set(mainWindow.dataText, 'position', ...
