@@ -217,6 +217,7 @@ for i = 1:proLen
     motifIdxs = cell(3, 2);
     for j = 1:3
         [motifDistance, minIdx] = min(matrixProfileCur);
+        motifDistance = motifDistance ^ 2;
         motifIdxs{j, 1} = sort([minIdx, profileIndex(minIdx)]);
         motifIdx = motifIdxs{j, 1}(1);
         motifQuery = data(motifIdx:motifIdx+subLen-1);
