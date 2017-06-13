@@ -6,22 +6,25 @@
 % Output:
 %     matrixProfile: matrix porfile of the self-join (vector)
 %     profileIndex: matrix porfile index of the self-join (vector)
-%     motifIndex: index of the first, second, and third motifs and their associated nearest neighbors when stopped (3x2 cell)
-%                +--------------------------------+-------------------------------------------+
-%                | pair of index for first motif  | nearest neighbor of the first motif pair  |
-%                +--------------------------------+-------------------------------------------+
-%                | pair of index for second motif | nearest neighbor of the second motif pair |
-%                +--------------------------------+-------------------------------------------+
-%                | pair of index for third motif  | nearest neighbor of the third motif pair  |
-%                +--------------------------------+-------------------------------------------+
+%     motifIndex: index of the first, second, and third motifs and their 
+%                 associated nearest neighbors when stopped (3x2 cell)
+%                 +-----------------------+----------------------------+
+%                 | indices for 1st motif | neighbors of the 1st motif |
+%                 +-----------------------+----------------------------+
+%                 | indices for 2nd motif | neighbors of the 2nd motif |
+%                 +-----------------------+----------------------------+
+%                 | indices for 3rd motif | neighbors of the 3rd motif |
+%                 +-----------------------+----------------------------+
 %     discordIndex: index of discords when stopped (vector)
 % Input:
 %     data: input time series (vector)
 %     subLen: interested subsequence length (scalar)
 %
-% Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau,
-% Diego Furtado Silva, Abdullah Mueen, and Eamonn Keogh, "Matrix Profile I: All Pairs Similarity
-% Joins for Time Series," ICDM 2016, http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
+% Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, 
+% Yifei Ding, Hoang Anh Dau, Diego Furtado Silva, Abdullah Mueen, and 
+% Eamonn Keogh, "Matrix Profile I: All Pairs Similarity Joins for Time 
+% Series: A Unifying View that Includes Motifs, Discords and Shapelets," 
+% ICDM 2016, http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
 %
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
