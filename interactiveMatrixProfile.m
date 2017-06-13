@@ -180,7 +180,7 @@ for i = 1:proLen
         'b', 'parent', mainWindow.profileAx);
     hold(mainWindow.profileAx, 'off');
     
-    % remove motif
+    % remove old plot
     if exist('motifMarkPlot', 'var')
         for j = 1:2
             delete(motifMarkPlot(j));
@@ -213,7 +213,7 @@ for i = 1:proLen
             excZoneLen) = inf;
     end
     
-    % compute matif
+    % find matif
     motifIdxs = cell(3, 2);
     for j = 1:3
         [motifDistance, minIdx] = min(matrixProfileCur);
@@ -304,8 +304,7 @@ for i = 1:proLen
     
     % find discord
     matrixProfileCur(isinf(matrixProfileCur)) = -inf;
-    [~, profileIdxOrder] = ...
-        sort(matrixProfileCur, 'descend');
+    [~, profileIdxOrder] = sort(matrixProfileCur, 'descend');
     discordIdx = zeros(3, 1);
     for j = 1:3
         if length(profileIdxOrder) < j
