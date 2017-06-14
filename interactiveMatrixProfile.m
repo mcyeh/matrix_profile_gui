@@ -154,7 +154,7 @@ for i = 1:length(idxOrder)
     if anytimeMode == 1
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
             dataMu, dataSig, dataMu(idx), dataSig(idx));
-        distProfile = real(distProfile);
+        distProfile = abs(distProfile);
         distProfile = sqrt(distProfile);
         
         distProfile(isSkip) = inf;
@@ -169,7 +169,7 @@ for i = 1:length(idxOrder)
     elseif anytimeMode == 2
         distProfile = diagonalDist(...
             data, idx, dataLen, subLen, proLen, dataMu, dataSig);
-        distProfile = real(distProfile);
+        distProfile = abs(distProfile);
         distProfile = sqrt(distProfile);
         
         pos1 = idx:proLen;
