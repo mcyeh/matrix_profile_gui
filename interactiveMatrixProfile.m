@@ -424,8 +424,9 @@ set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
 
 
-%% The following two functions are modified from the code provided in the following URL
-%  http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
+% The following two functions are modified from the code provided in the 
+% following URL
+% http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
 function [dataFreq, dataMu, dataSig] = massPre(data, dataLen, subLen)
 data(dataLen + 1:(subLen + dataLen)) = 0;
 dataFreq = fft(data);
