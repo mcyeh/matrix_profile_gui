@@ -1,5 +1,5 @@
 % The prototype for interactive matrix profile calculation
-% Chin-Chia Michael Yeh 01/26/2016
+% Chin-Chia Michael Yeh / Eamonn Keogh 01/26/2016
 %
 % [matrixProfile, profileIndex, motifIndex, discordIndex] = ...
 %     interactiveMatrixProfile(data, subLen);
