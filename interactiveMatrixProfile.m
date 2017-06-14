@@ -4,8 +4,8 @@
 % [matrixProfile, profileIndex, motifIndex, discordIndex] = ...
 %     interactiveMatrixProfile(data, subLen);
 % Output:
-%     matrixProfile: matrix porfile of the self-join (vector)
-%     profileIndex: matrix porfile index of the self-join (vector)
+%     matrixProfile: matrix profile of the input data (vector)
+%     profileIndex: matrix profile index of the input data (vector)
 %     motifIndex: index of the first, second, and third motifs and their 
 %                 associated neighbors when stopped (3x2 cell)
 %                 +-----------------------+------------------------+
@@ -52,7 +52,7 @@ if dataLen == size(data, 2)
     data = data';
 end
 
-%% spawn main window
+%% setup main window
 titleTxt = 'UCR Interactive Matrix Profile Calculation 2.0';
 mainWindow.fig = figure('name', titleTxt, ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
@@ -98,7 +98,7 @@ for i = 1:3
         'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
 end
 
-%% plot data
+%% plot input data
 dataPlot = zeroOneNorm(data);
 hold(mainWindow.dataAx, 'on');
 plot(1:dataLen, dataPlot, 'r', 'parent', mainWindow.dataAx);
@@ -136,7 +136,7 @@ motifColor = {'g', 'c'};
 discordColor = {'b', 'r', 'g'};
 neighborColor = 0.5 * ones(1, 3);
 
-%% iteratively plot
+%% main loop
 mainWindow.stopping = false;
 mainWindow.discardIdx = [];
 set(mainWindow.fig, 'userdata', mainWindow);
@@ -149,7 +149,7 @@ for i = 1:length(idxOrder)
     end
     drawnow;
     
-    % compute the distance profile
+    % compute the distance profile and update matrix profile
     query = data(idx:idx+subLen-1);
     if anytimeMode == 1
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
@@ -221,7 +221,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % apply discard
+    % prevent discard motifs from being rediscovered
     mainWindow = get(mainWindow.fig, 'userdata');
     discardIdx = mainWindow.discardIdx;
     matrixProfileCur = matrixProfile;
@@ -233,12 +233,12 @@ for i = 1:length(idxOrder)
             excZoneLen) = inf;
     end
     
-    % find matif
+    % find matifs and their neighbors
     [motifIdxs, matrixProfileCur] = findMotifs(...
         matrixProfileCur, profileIndex, dataLen, subLen, proLen, ...
         data, dataFreq, dataMu, dataSig, isSkip, excZoneLen, radius);
     
-    % plot motif on data
+    % highlight 1st motif on plot of input data
     motifMarkPlot = zeros(2, 1);
     for j = 1:2
         motifPos = motifIdxs{1, 1}(j):motifIdxs{1, 1}(j) + subLen - 1;
@@ -248,7 +248,7 @@ for i = 1:length(idxOrder)
         hold(mainWindow.dataAx, 'off');
     end
     
-    % plot motif's neighbor
+    % plot 1st, 2nd, and 3rd motif's neighbor
     motifPlot = cell(3, 2);
     for j = 1:3
         motifPlot{j, 2} = zeros(length(motifIdxs{j, 2}), 1);
@@ -264,7 +264,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % plot motif on motif axis
+    % plot 1st, 2nd, and 3rd motif
     for j = 1:3
         motifPlot{j, 1} = zeros(2, 1);
         for k = 1:2
@@ -281,7 +281,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % find discord
+    % find 1st, 2nd, 3rd discords
     matrixProfileCur(isinf(matrixProfileCur)) = -inf;
     [~, profileIdxOrder] = sort(matrixProfileCur, 'descend');
     discordIdx = zeros(3, 1);
@@ -296,7 +296,7 @@ for i = 1:length(idxOrder)
     end
     discordIdx(discordIdx == 0) = nan;
     
-    % plot discord
+    % plot 1st, 2nd, 3rd discords
     discordPlot = zeros(sum(~isnan(discordIdx)), 1);
     for j = 1:3
         if isnan(discordIdx(j))
@@ -310,7 +310,7 @@ for i = 1:length(idxOrder)
         hold(mainWindow.discordAx, 'off');
     end
     
-    % update process text
+    % update text indicating process
     set(mainWindow.dataText, 'string', ...
         sprintf(['We are %.1f%% done: The input time series: ', ...
         'The best-so-far motifs are color coded (see bottom panel)'], ...
@@ -327,7 +327,7 @@ for i = 1:length(idxOrder)
         firstUpdate = false;
     end
     
-    % check for stop
+    % check for stop condition
     mainWindow = get(mainWindow.fig, 'userdata');
     mainWindow.motifIdxs = motifIdxs;
     set(mainWindow.fig, 'userdata', mainWindow);
