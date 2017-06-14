@@ -8,13 +8,13 @@
 %     profileIndex: matrix porfile index of the self-join (vector)
 %     motifIndex: index of the first, second, and third motifs and their 
 %                 associated neighbors when stopped (3x2 cell)
-%                 +-----------------------+----------------------------+
-%                 | indices for 1st motif | neighbors of the 1st motif |
-%                 +-----------------------+----------------------------+
-%                 | indices for 2nd motif | neighbors of the 2nd motif |
-%                 +-----------------------+----------------------------+
-%                 | indices for 3rd motif | neighbors of the 3rd motif |
-%                 +-----------------------+----------------------------+
+%                 +-----------------------+------------------------+
+%                 | indices for 1st motif | neighbors of 1st motif |
+%                 +-----------------------+------------------------+
+%                 | indices for 2nd motif | neighbors of 2nd motif |
+%                 +-----------------------+------------------------+
+%                 | indices for 3rd motif | neighbors of 3rd motif |
+%                 +-----------------------+------------------------+
 %     discordIndex: index of discords when stopped (vector)
 % Input:
 %     data: input time series (vector)
