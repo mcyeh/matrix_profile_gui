@@ -27,9 +27,6 @@
 % ICDM 2016, http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
 %
 % Modification to incorporate the annotation vector 
-% Extra output: 
-% correctedMatrixProfile: the matrix profile corrected with the annotation
-% vector (vector)
 % Extra input:
 % annotatioVector: the annotation vector of the input data (vector)
 % 
@@ -38,7 +35,7 @@
 % http://www.cs.ucr.edu/~hdau001/guided_motif_search/
 %
 %%
-function [matrixProfile, corrected_MP, profileIndex, motifIdxs, discordIdx] = ...
+function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
     interactiveMatrixProfile_corrected(data, subLen, annotationVector)
 %% options for the algorithm
 excZoneLen = round(subLen * 0.5);
@@ -154,13 +151,18 @@ for i = 1:length(idxOrder)
         profileIndex(isSkip) = 0;
     end
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % correct the matrix profile
     matrixProfileCur = matrixProfile;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % correcting the matrix profile
+    if exist('annotationVector', 'var')
+    if iscolumn(annotationVector) ~= 1
+        annotationVector = annotationVector';
+    end
     matrixProfileCur(isinf(matrixProfileCur)) = -inf;
     corrected_MP = matrixProfileCur + (1 - annotationVector) * max(matrixProfileCur);
     corrected_MP(isinf(corrected_MP)) = inf;
     matrixProfileCur = corrected_MP;
+    end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % check update condition
@@ -173,8 +175,13 @@ for i = 1:length(idxOrder)
         delete(prefilePlot);
     end
     hold(mainWindow.profileAx, 'on');
+    if exist('annotationVector', 'var')
     prefilePlot = plot(1:proLen, corrected_MP, ...
         'b', 'parent', mainWindow.profileAx);
+    else
+        prefilePlot = plot(1:proLen, matrixProfile, ...
+        'b', 'parent', mainWindow.profileAx);
+    end
     hold(mainWindow.profileAx, 'off');
     
     % remove old plot
@@ -476,7 +483,7 @@ mainWindow.dataText = uicontrol('parent', mainWindow.fig, ...
     'style', 'text', 'string', '', 'fontsize', 10, ...
     'backgroundcolor', backColor, 'horizontalalignment', 'left');
 mainWindow.profileText = uicontrol('parent', mainWindow.fig, ...
-    'style', 'text', 'string', 'The best-so-far corrected matrix profile', ...
+    'style', 'text', 'string', 'The best-so-far matrix profile', ...
     'fontsize', 10, 'backgroundcolor', backColor, ...
     'horizontalalignment', 'left');
 mainWindow.discordText = uicontrol('parent', mainWindow.fig, ...
