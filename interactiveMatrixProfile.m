@@ -36,7 +36,7 @@
 %
 %%
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
-    interactiveMatrixProfile_corrected(data, subLen, annotationVector)
+    interactiveMatrixProfile(data, subLen, annotationVector)
 %% options for the algorithm
 excZoneLen = round(subLen * 0.5);
 radius = 2;
