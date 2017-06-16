@@ -327,8 +327,8 @@ for i = 1:length(idxOrder)
     end
     timer = tic();
 end
-end
 
+%%
 function [motifIdxs, matrixProfileCur] = findMotifs(...
     matrixProfileCur, profileIndex, dataLen, subLen, proLen, ...
     data, dataFreq, dataMu, dataSig, isSkip, excZoneLen, radius)
@@ -377,8 +377,8 @@ for i = 1:3
         matrixProfileCur(removeZoneStart:removeZoneEnd) = inf;
     end
 end
-end
 
+%%
 function pushDiscardBtn(src, ~, btnNum)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
@@ -388,8 +388,8 @@ for i = 1:3
     set(mainWindow.discardBtn(i), 'enable', 'off');
 end
 set(mainWindow.fig, 'userdata', mainWindow);
-end
 
+%%
 function pushStopBtn(src, ~)
 mainWindowFig = get(src, 'parent');
 mainWindow = get(mainWindowFig, 'userdata');
@@ -399,8 +399,8 @@ for i = 1:3
 end
 set(src, 'enable', 'off');
 set(mainWindow.fig, 'userdata', mainWindow);
-end
 
+%%
 % The following two functions are modified from the code provided in the 
 % following URL
 % http://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html
@@ -416,8 +416,8 @@ dataSum = dataCumsum(subLen:dataLen) - ...
 dataMu = dataSum ./ subLen;
 data2Sig = (data2Sum ./ subLen) - (dataMu .^ 2);
 dataSig = sqrt(data2Sig);
-end
 
+%%
 function distProfile = mass(dataFreq, query, ...
     dataLen, subLen, dataMu, dataSig, queryMu, querySig)
 query = query(end:-1:1);
@@ -428,8 +428,8 @@ product = ifft(productFreq);
 distProfile = 2 * (subLen - ...
     (product(subLen:dataLen) - subLen * dataMu * queryMu) ./ ...
     (dataSig * querySig));
-end
 
+%%
 function distProfile = diagonalDist(...
     data, idx, dataLen, subLen, proLen, dataMu, dataSig)
 xTerm = ones(proLen - idx + 1, 1) * ...
@@ -446,12 +446,11 @@ distProfile = (xTerm - ...
     subLen .* dataMu(idx:end) .* dataMu(1:proLen - idx + 1)) ./ ...
     (subLen .* dataSig(idx:end) .* dataSig(1:proLen - idx + 1));
 distProfile = 2 * subLen * (1 - distProfile);
-end
 
+%%
 function x = zeroOneNorm(x)
 x = x - min(x(~isinf(x) & ~isnan(x)));
 x = x / max(x(~isinf(x) & ~isnan(x)));
-end
 
 %%
 function mainWindow = setupMainWindow(dataLen, subLen)
@@ -501,7 +500,6 @@ for i = 1:3
         'style', 'pushbutton', 'string', 'Discard', 'fontsize', 10, ...
         'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
 end
-end
 
 %%
 function mainResize(src, ~)
@@ -537,5 +535,4 @@ for i = 1:3
     set(mainWindow.discardBtn(i), 'position', ...
         [figPosition(3) - 120, ...
         (4 - i) * axesHeight + (4 - i) * axGap + 30, 90, 20]);
-end
 end
