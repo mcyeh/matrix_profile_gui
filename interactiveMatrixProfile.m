@@ -2,7 +2,7 @@
 % Chin-Chia Michael Yeh / Eamonn Keogh 01/26/2016
 %
 % [matrixProfile, profileIndex, motifIndex, discordIndex] = ...
-%     interactiveMatrixProfile(data, subLen);
+%     interactiveMatrixProfile(data, subLen, split);
 % Output:
 %     matrixProfile: matrix profile of the input data (vector)
 %     profileIndex: matrix profile index of the input data (vector)
@@ -19,6 +19,8 @@
 % Input:
 %     data: input time series (vector)
 %     subLen: subsequence length (scalar)
+%     split: the joins must cross this index, put inf to remove this 
+%            constrain (scalar)
 %
 % Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, 
 % Yifei Ding, Hoang Anh Dau, Diego Furtado Silva, Abdullah Mueen, and 
@@ -28,7 +30,7 @@
 %
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
-    interactiveMatrixProfile(data, subLen)
+    interactiveMatrixProfile(data, subLen, split)
 %% options for the algorithm
 excZoneLen = round(subLen * 0.5);
 radius = 2;
@@ -174,6 +176,14 @@ for i = 1:length(idxOrder)
         
         pos1 = idx:proLen;
         pos2 = 1:proLen - idx + 1;
+        
+        if ~isinf(split)
+            distProfile = distProfile(pos2 <= split & pos1 > split);
+            pos1Split = pos1(pos2 <= split & pos1 > split);
+            pos2Split = pos2(pos2 <= split & pos1 > split);
+            pos1 = pos1Split;
+            pos2 = pos2Split;
+        end
         
         updatePos = matrixProfile(pos1) > distProfile;
         profileIndex(pos1(updatePos)) = pos2(updatePos);
