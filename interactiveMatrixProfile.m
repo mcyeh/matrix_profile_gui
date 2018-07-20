@@ -1,11 +1,12 @@
 % The prototype for interactive matrix profile calculation
 % Chin-Chia Michael Yeh / Eamonn Keogh 01/26/2016
+% modified by Yan Zhu 07/19/2018
 %
 % [matrixProfile, profileIndex, motifIndex, discordIndex] = ...
 %     interactiveMatrixProfile(data, subLen);
 % Output:
-%     matrixProfile: matrix profile of the input data (vector)
-%     profileIndex: matrix profile index of the input data (vector)
+%     matrixProfile: matrix porfile of the self-join (vector)
+%     profileIndex: matrix porfile index of the self-join (vector)
 %     motifIndex: index of the first, second, and third motifs and their 
 %                 associated neighbors when stopped (3x2 cell)
 %                 +-----------------------+------------------------+
@@ -26,9 +27,11 @@
 % Series: A Unifying View that Includes Motifs, Discords and Shapelets," 
 % ICDM 2016, http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
 %
+% This code does not use STAMP or STOMP, it uses SCRIMP, which is under
+% review. We uploaded this code as a courtesy to the community
 
 function [matrixProfile, profileIndex, motifIdxs, discordIdx] = ...
-    interactiveMatrixProfile(data, subLen)
+    interactiveMatrixProfileVer2(data, subLen)
 %% options for the algorithm
 excZoneLen = round(subLen * 0.5);
 radius = 2;
@@ -52,7 +55,7 @@ if dataLen == size(data, 2)
     data = data';
 end
 
-%% setup main window
+%% spawn main window
 titleTxt = 'UCR Interactive Matrix Profile Calculation 2.0';
 mainWindow.fig = figure('name', titleTxt, ...
     'visible', 'off', 'toolbar', 'none', 'ResizeFcn', @mainResize);
@@ -98,7 +101,7 @@ for i = 1:3
         'callback', @(src, cbdata) pushDiscardBtn(src, cbdata, i));
 end
 
-%% plot input data
+%% plot data
 dataPlot = zeroOneNorm(data);
 hold(mainWindow.dataAx, 'on');
 plot(1:dataLen, dataPlot, 'r', 'parent', mainWindow.dataAx);
@@ -109,7 +112,8 @@ proLen = dataLen - subLen + 1;
 isSkip = false(proLen, 1);
 for i = 1:proLen
     if any(isnan(data(i:i + subLen - 1))) || ...
-            any(isinf(data(i:i + subLen - 1)))
+            any(isinf(data(i:i + subLen - 1))) || ...
+            max(data(i:i + subLen - 1)) ==  min(data(i:i + subLen - 1))
         isSkip(i) = true;
     end
 end
@@ -136,7 +140,7 @@ motifColor = {'g', 'c'};
 discordColor = {'b', 'r', 'g'};
 neighborColor = 0.5 * ones(1, 3);
 
-%% main loop
+%% iteratively plot
 mainWindow.stopping = false;
 mainWindow.discardIdx = [];
 set(mainWindow.fig, 'userdata', mainWindow);
@@ -144,14 +148,11 @@ firstUpdate = true;
 timer = tic();
 for i = 1:length(idxOrder)
     idx = idxOrder(i);
-    if isSkip(idx)
-        continue
-    end
     drawnow;
     
-    % compute the distance profile and update matrix profile
+    % compute the distance profile
     query = data(idx:idx+subLen-1);
-    if anytimeMode == 1
+    if anytimeMode == 1 && ~isSkip(idx)
         distProfile = mass(dataFreq, query, dataLen, subLen, ...
             dataMu, dataSig, dataMu(idx), dataSig(idx));
         distProfile = abs(distProfile);
@@ -221,7 +222,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % prevent discard motifs from being rediscovered
+    % apply discard
     mainWindow = get(mainWindow.fig, 'userdata');
     discardIdx = mainWindow.discardIdx;
     matrixProfileCur = matrixProfile;
@@ -233,12 +234,12 @@ for i = 1:length(idxOrder)
             excZoneLen) = inf;
     end
     
-    % find matifs and their neighbors
+    % find motif
     [motifIdxs, matrixProfileCur] = findMotifs(...
         matrixProfileCur, profileIndex, dataLen, subLen, proLen, ...
         data, dataFreq, dataMu, dataSig, isSkip, excZoneLen, radius);
     
-    % highlight 1st motif on plot of input data
+    % plot motif on data
     motifMarkPlot = zeros(2, 1);
     for j = 1:2
         motifPos = motifIdxs{1, 1}(j):motifIdxs{1, 1}(j) + subLen - 1;
@@ -248,7 +249,7 @@ for i = 1:length(idxOrder)
         hold(mainWindow.dataAx, 'off');
     end
     
-    % plot 1st, 2nd, and 3rd motif's neighbor
+    % plot motif's neighbor
     motifPlot = cell(3, 2);
     for j = 1:3
         motifPlot{j, 2} = zeros(length(motifIdxs{j, 2}), 1);
@@ -264,7 +265,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % plot 1st, 2nd, and 3rd motif
+    % plot motif on motif axis
     for j = 1:3
         motifPlot{j, 1} = zeros(2, 1);
         for k = 1:2
@@ -281,7 +282,7 @@ for i = 1:length(idxOrder)
         end
     end
     
-    % find 1st, 2nd, 3rd discords
+    % find discord
     matrixProfileCur(isinf(matrixProfileCur)) = -inf;
     [~, profileIdxOrder] = sort(matrixProfileCur, 'descend');
     discordIdx = zeros(3, 1);
@@ -296,7 +297,7 @@ for i = 1:length(idxOrder)
     end
     discordIdx(discordIdx == 0) = nan;
     
-    % plot 1st, 2nd, 3rd discords
+    % plot discord
     discordPlot = zeros(sum(~isnan(discordIdx)), 1);
     for j = 1:3
         if isnan(discordIdx(j))
@@ -310,7 +311,7 @@ for i = 1:length(idxOrder)
         hold(mainWindow.discordAx, 'off');
     end
     
-    % update text indicating process
+    % update process text
     set(mainWindow.dataText, 'string', ...
         sprintf(['We are %.1f%% done: The input time series: ', ...
         'The best-so-far motifs are color coded (see bottom panel)'], ...
@@ -327,7 +328,7 @@ for i = 1:length(idxOrder)
         firstUpdate = false;
     end
     
-    % check for stop condition
+    % check for stop
     mainWindow = get(mainWindow.fig, 'userdata');
     mainWindow.motifIdxs = motifIdxs;
     set(mainWindow.fig, 'userdata', mainWindow);
@@ -379,7 +380,7 @@ for i = 1:3
     [distanceOrder, distanceIdxOrder] = sort(distProfile, 'ascend');
     motifNeighbor = zeros(1, 10);
     for j = 1:10
-        if isinf(distanceOrder(1)) || length(distanceOrder) < j
+        if isinf(distanceOrder(1)) || length(distanceOrder) < 1
             break;
         end
         motifNeighbor(j) = distanceIdxOrder(1);
